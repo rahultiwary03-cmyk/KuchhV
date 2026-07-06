@@ -4,32 +4,41 @@ import os
 from datetime import datetime
 
 # ==========================================
-# 1. SETUP & DATABASE
+# 1. SETUP & DATABASE FILES
 # ==========================================
-st.set_page_config(page_title="KuchhV | Har Zarurat, Ek Platform", layout="wide", page_icon="🚀")
+st.set_page_config(page_title="KuchhV | Har Zarurat, Ek Platform", layout="wide", page_icon="🛒")
 
-REQUIREMENTS_FILE = "req_v4.csv"
-PARTNERS_FILE = "partners_v4.csv"
-ORDERS_FILE = "orders_v4.csv"
+# Using v5 files to keep new structure clean
+REQUIREMENTS_FILE = "req_v5.csv"
+PARTNERS_FILE = "partners_v5.csv"
+ORDERS_FILE = "orders_v5.csv"
+PRODUCTS_FILE = "products_v5.csv"  # NEW: Global Catalog with Photos
 
 INDIAN_SERVICES = [
-    "Grocery & Daily Needs", "Fresh Vegetables & Fruits", "Dairy & Milk Delivery", 
-    "Plumber", "Electrician", "Carpenter", "AC Repair & Servicing", 
-    "IT Freelancer (Python/Excel)", "Web Developer", "Graphic Designer",
-    "Tractor Rental", "JCB & Crane Rental", "Mini Truck (Tata Ace) Booking", "Bike Taxi",
-    "CA & GST Filing (Pragya Kendra)", "Lawyer & Notary", "Real Estate (Rent/Buy)",
-    "Doctor Appointment", "Medicine Delivery", "Lab Test at Home",
-    "Men's Salon", "Women's Parlour", "Bridal Makeup", 
-    "Tent House & Decorator", "Caterers (Halwai)", "Labour Contractor (Daily Wage)"
+    "Grocery & Daily Needs", "Fresh Vegetables & Fruits", "Plumber", "Electrician", 
+    "AC Repair & Servicing", "IT Freelancer (Python/Excel)", "Web Developer",
+    "Tractor Rental", "Mini Truck (Tata Ace) Booking", "Bike Taxi",
+    "CA & GST Filing", "Real Estate (Rent/Buy)", "Medicine Delivery", "Men's Salon"
 ]
 
+# Create files if missing
 for file, cols in [
     (REQUIREMENTS_FILE, ["Timestamp", "Phone", "Category", "Requirement", "Location", "Status"]),
     (PARTNERS_FILE, ["Phone", "Password", "Business_Name", "Category", "Verification_Status", "Base_Price"]),
-    (ORDERS_FILE, ["Timestamp", "Customer_Phone", "Partner", "Service", "Price", "Platform_Fee", "Partner_Earning", "Status"])
+    (ORDERS_FILE, ["Timestamp", "Customer_Phone", "Item_Name", "Category", "Price", "Partner_Assigned", "Status"])
 ]:
     if not os.path.exists(file):
         pd.DataFrame(columns=cols).to_csv(file, index=False)
+
+# Seed dummy products with images if catalog is empty
+if not os.path.exists(PRODUCTS_FILE):
+    dummy_products = pd.DataFrame([
+        {"Item_Name": "Aashirvaad Atta (5kg)", "Category": "Grocery & Daily Needs", "Price": "220", "Image_URL": "https://placehold.co/300x300/e2e8f0/1e293b?text=Atta+5kg"},
+        {"Item_Name": "Amul Taaza Milk (1L)", "Category": "Grocery & Daily Needs", "Price": "68", "Image_URL": "https://placehold.co/300x300/e2e8f0/1e293b?text=Amul+Milk"},
+        {"Item_Name": "AC Deep Servicing", "Category": "AC Repair & Servicing", "Price": "499", "Image_URL": "https://placehold.co/300x300/e2e8f0/1e293b?text=AC+Service"},
+        {"Item_Name": "Tata Ace (Chota Hathi)", "Category": "Mini Truck (Tata Ace) Booking", "Price": "800", "Image_URL": "https://placehold.co/300x300/e2e8f0/1e293b?text=Tata+Ace"},
+    ])
+    dummy_products.to_csv(PRODUCTS_FILE, index=False)
 
 def load_data(file_name):
     return pd.read_csv(file_name, dtype=str)
@@ -41,17 +50,16 @@ def save_data(file_name, new_data):
 def overwrite_data(file_name, df):
     df.to_csv(file_name, index=False)
 
-# Professional Colorful CSS
+# CSS for Product Grid and UI
 st.markdown("""
     <style>
     .stApp { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    [data-testid="stSidebar"] { background: linear-gradient(180deg, #1e3c72 0%, #2a5298 100%); }
+    [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%); }
     [data-testid="stSidebar"] * { color: #ffffff !important; }
     .support-box { background-color: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid rgba(255,255,255,0.3); }
-    .price-card { background: white; padding: 20px; border-radius: 12px; border-left: 5px solid #2563eb; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px;}
-    .fee-text { color: #dc2626; font-size: 14px; font-weight: 600;}
-    .earning-text { color: #059669; font-size: 15px; font-weight: 700;}
-    h1, h2, h3 { color: #0f172a; }
+    .product-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px;}
+    .product-price { color: #16a34a; font-size: 20px; font-weight: 800; margin: 10px 0;}
+    .product-title { font-size: 16px; font-weight: 700; color: #1e293b; height: 45px; overflow: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -59,87 +67,76 @@ if 'logged_in_partner' not in st.session_state:
     st.session_state['logged_in_partner'] = None
 
 # ==========================================
-# 2. APP NAVIGATION & 24/7 SUPPORT
+# 2. APP NAVIGATION & SUPPORT
 # ==========================================
 st.sidebar.title("📱 KuchhV Super App")
-st.sidebar.caption("Har Zarurat, Ek Platform.")
 st.sidebar.write("---")
-app_mode = st.sidebar.radio("Main Menu:", ["🏠 Customer Marketplace", "📢 Requirement Hub", "💼 Partner Portal", "⚙️ Admin Center"])
+app_mode = st.sidebar.radio("Main Menu:", ["🏠 Visual Marketplace", "📢 Requirement Hub", "💼 Partner Portal", "⚙️ Admin Control Room"])
 st.sidebar.write("---")
 
-# 24/7 Customer Support Module
 st.sidebar.markdown("""
 <div class='support-box'>
-    <h3 style='color: white; margin-bottom: 5px;'>🎧 24/7 Customer Support</h3>
-    <p style='font-size: 13px; margin-bottom: 5px;'>Need help with booking or verification?</p>
+    <h3 style='color: white; margin-bottom: 5px;'>🎧 24/7 Support</h3>
     <p style='margin: 0; font-weight: bold;'>📞 8521413089</p>
     <p style='margin: 0; font-size: 12px;'>✉️ Rahultiwary03@gmail.com</p>
 </div>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. CUSTOMER MARKETPLACE
+# 3. CUSTOMER MARKETPLACE (Visual Catalog)
 # ==========================================
-if app_mode == "🏠 Customer Marketplace":
-    st.title("🛍️ KuchhV Marketplace")
-    st.markdown("### Search anything. Compare prices. Book the lowest.")
+if app_mode == "🏠 Visual Marketplace":
+    st.title("🛒 KuchhV Marketplace")
+    st.markdown("### Browse Items & Services with Lowest Prices")
     
-    selected_service = st.selectbox("🔍 What do you need today?", ["-- Select or Type Here --"] + INDIAN_SERVICES)
+    selected_cat = st.selectbox("🔍 Filter by Category:", ["All Categories"] + INDIAN_SERVICES)
     
-    if selected_service != "-- Select or Type Here --":
+    products_df = load_data(PRODUCTS_FILE)
+    if selected_cat != "All Categories":
+        products_df = products_df[products_df['Category'] == selected_cat]
+        
+    if not products_df.empty:
         st.write("---")
-        st.subheader(f"Available Partners for '{selected_service}'")
+        # Create a grid of 4 columns
+        cols = st.columns(4)
         
-        partner_df = load_data(PARTNERS_FILE)
-        available = partner_df[(partner_df['Category'] == selected_service) & (partner_df['Verification_Status'] == 'Verified ✅')].copy()
-        
-        if not available.empty:
-            available['Base_Price'] = pd.to_numeric(available['Base_Price'], errors='coerce').fillna(999)
-            available = available.sort_values(by='Base_Price')
-            
-            st.success(f"✅ Found {len(available)} verified partner(s). Showing lowest prices first.")
-            
-            for index, row in available.iterrows():
-                partner_name = row['Business_Name']
-                price = float(row['Base_Price'])
-                platform_fee = price * 0.01 
-                partner_earning = price - platform_fee
+        for index, row in products_df.iterrows():
+            with cols[index % 4]: # Distribute items across columns
+                st.markdown(f"<div class='product-card'>", unsafe_allow_html=True)
+                st.image(row['Image_URL'], use_container_width=True)
+                st.markdown(f"<div class='product-title'>{row['Item_Name']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='product-price'>₹{row['Price']}</div>", unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
                 
-                st.markdown(f"""
-                <div class='price-card'>
-                    <h3 style='margin-top:0;'>🏪 {partner_name}</h3>
-                    <p style='font-size: 22px; font-weight: 800; color: #1e293b; margin: 5px 0;'>Price: ₹{price:,.2f}</p>
-                    <p class='fee-text' style='margin:0;'>KuchhV Platform Fee (1%): ₹{platform_fee:,.2f}</p>
-                    <p class='earning-text' style='margin:0;'>Partner Earns: ₹{partner_earning:,.2f}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                with st.expander(f"Book {partner_name} Now"):
-                    with st.form(f"book_{index}"):
-                        cust_phone = st.text_input("Your Mobile Number:")
-                        if st.form_submit_button("Confirm Booking"):
-                            if cust_phone:
+                with st.popover(f"Buy {row['Item_Name']}"):
+                    with st.form(f"order_form_{index}"):
+                        st.write(f"**Order:** {row['Item_Name']}")
+                        phone = st.text_input("Enter Mobile No.")
+                        if st.form_submit_button("Confirm Order"):
+                            if phone:
                                 save_data(ORDERS_FILE, {
                                     "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                    "Customer_Phone": cust_phone, "Partner": partner_name, "Service": selected_service,
-                                    "Price": price, "Platform_Fee": platform_fee, "Partner_Earning": partner_earning, "Status": "Pending"
+                                    "Customer_Phone": phone,
+                                    "Item_Name": row['Item_Name'],
+                                    "Category": row['Category'],
+                                    "Price": row['Price'],
+                                    "Partner_Assigned": "Unassigned", # Goes to Admin pool
+                                    "Status": "Pending Admin/Partner Action"
                                 })
-                                st.success("🎉 Booking Confirmed! The partner will contact you shortly.")
+                                st.success("Order Placed! Our team will contact you.")
                             else:
-                                st.error("Please enter your mobile number.")
-        else:
-            st.warning("No verified partners found for this service right now.")
-            st.info("💡 Post this in the Requirement Hub and local partners will bid for your request!")
+                                st.error("Phone number is required.")
+    else:
+        st.info("No items found in this category yet. Admin is updating the catalog!")
 
 # ==========================================
 # 4. REQUIREMENT HUB
 # ==========================================
 elif app_mode == "📢 Requirement Hub":
     st.title("📢 Custom Requirement Hub")
-    st.write("Need bulk materials, a large workforce, or custom services? Post it here.")
+    st.write("If you can't find an item with a photo, just post your requirement here!")
     
     with st.container():
-        st.markdown("<div style='background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);'>", unsafe_allow_html=True)
         with st.form("req_form"):
             col1, col2 = st.columns(2)
             with col1:
@@ -147,68 +144,49 @@ elif app_mode == "📢 Requirement Hub":
                 loc = st.text_input("Pincode / City")
             with col2:
                 phone = st.text_input("Mobile Number")
-            
             desc = st.text_area("Detail your exact need:")
-            
             if st.form_submit_button("Broadcast to Partners 🚀"):
                 if phone and desc and loc:
                     save_data(REQUIREMENTS_FILE, {
                         "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         "Phone": phone, "Category": req_cat, "Requirement": desc, "Location": loc, "Status": "Open"
                     })
-                    st.success("✅ Broadcasted! Partners will bid on your requirement.")
-                    st.balloons()
+                    st.success("✅ Broadcasted!")
                 else:
                     st.error("Please fill all details.")
-        st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
 # 5. PARTNER PORTAL
 # ==========================================
 elif app_mode == "💼 Partner Portal":
     st.title("💼 Partner Business Portal")
-    
     if st.session_state['logged_in_partner'] is None:
         t1, t2 = st.tabs(["🔐 Login", "📝 Register Business"])
-        
         with t2:
-            st.subheader("Join KuchhV & Grow Your Business")
-            st.info("KuchhV Platform charges only 1% fee on your total billing.")
             with st.form("reg_form"):
-                biz_name = st.text_input("Business / Freelancer Name")
+                biz_name = st.text_input("Business Name")
                 phone = st.text_input("Mobile Number")
-                pwd = st.text_input("Create Password", type="password")
-                cat = st.selectbox("Your Primary Category", INDIAN_SERVICES)
-                base_price = st.number_input("Your Starting Price / Hourly Rate (₹)", min_value=10, value=100)
-                
+                pwd = st.text_input("Password", type="password")
+                cat = st.selectbox("Category", INDIAN_SERVICES)
                 if st.form_submit_button("Register"):
                     pdf = load_data(PARTNERS_FILE)
                     if phone in pdf['Phone'].values:
-                        st.error("Mobile Number already registered!")
+                        st.error("Already registered!")
                     else:
-                        save_data(PARTNERS_FILE, {
-                            "Phone": phone, "Password": pwd, "Business_Name": biz_name, 
-                            "Category": cat, "Verification_Status": "Pending", "Base_Price": base_price
-                        })
-                        st.success("✅ Registered! Please wait for Admin approval.")
-                        
+                        save_data(PARTNERS_FILE, {"Phone": phone, "Password": pwd, "Business_Name": biz_name, "Category": cat, "Verification_Status": "Pending", "Base_Price": "0"})
+                        st.success("✅ Registered! Wait for Admin approval.")
         with t1:
-            st.subheader("Secure Login")
             l_phone = st.text_input("Mobile Number ")
             l_pwd = st.text_input("Password ", type="password")
-            
             if st.button("Login Now"):
                 pdf = load_data(PARTNERS_FILE)
                 user = pdf[(pdf['Phone'] == l_phone) & (pdf['Password'] == l_pwd)]
-                
                 if not user.empty:
-                    stat = user.iloc[0]['Verification_Status']
-                    if stat == 'Verified ✅':
+                    if user.iloc[0]['Verification_Status'] == 'Verified ✅':
                         st.session_state['logged_in_partner'] = user.iloc[0]['Business_Name']
-                        st.success("Login Successful!")
                         st.rerun()
                     else:
-                        st.error(f"Account Status: {stat}. Admin approval is required.")
+                        st.error("Admin approval is pending.")
                 else:
                     st.error("Invalid credentials.")
     else:
@@ -217,40 +195,46 @@ elif app_mode == "💼 Partner Portal":
             st.session_state['logged_in_partner'] = None
             st.rerun()
             
-        st.subheader("📦 Your Direct Orders")
+        st.subheader("📦 Orders Assigned to You")
         odf = load_data(ORDERS_FILE)
-        my_orders = odf[odf['Partner'] == st.session_state['logged_in_partner']]
+        my_orders = odf[odf['Partner_Assigned'] == st.session_state['logged_in_partner']]
         st.dataframe(my_orders, use_container_width=True)
 
 # ==========================================
-# 6. SUPER ADMIN CENTER (Full Database Control)
+# 6. ADMIN CONTROL ROOM (Unassigned Orders & Catalog)
 # ==========================================
-elif app_mode == "⚙️ Admin Center":
-    st.title("⚙️ Super Admin Control Room")
-    st.write("Complete Database Management System (View, Add, Edit, Delete Records)")
+elif app_mode == "⚙️ Admin Control Room":
+    st.title("⚙️ Super Admin Dashboard")
     
-    t_partners, t_orders, t_reqs = st.tabs(["👥 Manage Partners", "🛒 Manage Orders", "📢 Manage Requirements"])
+    t_orders, t_catalog, t_partners = st.tabs(["🚨 Manage Orders", "📸 Global Catalog", "👥 Manage Partners"])
     
-    with t_partners:
-        st.subheader("Partner Database (Add/Modify/Delete)")
-        pdf = load_data(PARTNERS_FILE)
-        edited_pdf = st.data_editor(pdf, num_rows="dynamic", use_container_width=True, key="edit_partners")
-        if st.button("💾 Save Partner Changes"):
-            overwrite_data(PARTNERS_FILE, edited_pdf)
-            st.success("Partner database updated successfully!")
-            
     with t_orders:
-        st.subheader("Orders Database (Add/Modify/Delete)")
+        st.subheader("Order Management")
         odf = load_data(ORDERS_FILE)
+        
+        # Highlight Unassigned Orders for Admin
+        unassigned = odf[odf['Partner_Assigned'] == 'Unassigned']
+        if not unassigned.empty:
+            st.error(f"🚨 ALERT: {len(unassigned)} Order(s) need a partner assigned!")
+            
         edited_odf = st.data_editor(odf, num_rows="dynamic", use_container_width=True, key="edit_orders")
         if st.button("💾 Save Order Changes"):
             overwrite_data(ORDERS_FILE, edited_odf)
-            st.success("Orders database updated successfully!")
+            st.success("Orders updated!")
+            
+    with t_catalog:
+        st.subheader("Add/Edit Products & Photos")
+        st.info("Paste image URLs (e.g., from Google Images or Drive) in the 'Image_URL' column.")
+        prodf = load_data(PRODUCTS_FILE)
+        edited_prodf = st.data_editor(prodf, num_rows="dynamic", use_container_width=True, key="edit_catalog")
+        if st.button("💾 Save Catalog"):
+            overwrite_data(PRODUCTS_FILE, edited_prodf)
+            st.success("Catalog updated!")
 
-    with t_reqs:
-        st.subheader("Requirement Hub Database (Add/Modify/Delete)")
-        rdf = load_data(REQUIREMENTS_FILE)
-        edited_rdf = st.data_editor(rdf, num_rows="dynamic", use_container_width=True, key="edit_reqs")
-        if st.button("💾 Save Requirement Changes"):
-            overwrite_data(REQUIREMENTS_FILE, edited_rdf)
-            st.success("Requirements database updated successfully!")
+    with t_partners:
+        st.subheader("Partner Database")
+        pdf = load_data(PARTNERS_FILE)
+        edited_pdf = st.data_editor(pdf, num_rows="dynamic", use_container_width=True, key="edit_partners")
+        if st.button("💾 Save Partners"):
+            overwrite_data(PARTNERS_FILE, edited_pdf)
+            st.success("Partners updated!")
