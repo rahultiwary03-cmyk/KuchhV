@@ -4,24 +4,30 @@ import os
 from datetime import datetime
 
 # ==========================================
-# 1. SETUP & DATABASE FILES
+# 1. SETUP & MEGA DATABASE FILES
 # ==========================================
-st.set_page_config(page_title="KuchhV | Har Zarurat, Ek Platform", layout="wide", page_icon="🛒")
+st.set_page_config(page_title="KuchhV | Har Zarurat, Ek Platform", layout="wide", page_icon="🇮🇳")
 
-# Using v5 files to keep new structure clean
-REQUIREMENTS_FILE = "req_v5.csv"
-PARTNERS_FILE = "partners_v5.csv"
-ORDERS_FILE = "orders_v5.csv"
-PRODUCTS_FILE = "products_v5.csv"  # NEW: Global Catalog with Photos
+REQUIREMENTS_FILE = "req_v6.csv"
+PARTNERS_FILE = "partners_v6.csv"
+ORDERS_FILE = "orders_v6.csv"
+PRODUCTS_FILE = "products_v6.csv"
 
-INDIAN_SERVICES = [
-    "Grocery & Daily Needs", "Fresh Vegetables & Fruits", "Plumber", "Electrician", 
-    "AC Repair & Servicing", "IT Freelancer (Python/Excel)", "Web Developer",
-    "Tractor Rental", "Mini Truck (Tata Ace) Booking", "Bike Taxi",
-    "CA & GST Filing", "Real Estate (Rent/Buy)", "Medicine Delivery", "Men's Salon"
-]
+# Comprehensive Pan-India Categories
+INDIAN_SERVICES = sorted([
+    "Grocery & Daily Needs", "Fresh Vegetables & Fruits", "Dairy & Milk Delivery",
+    "Plumber", "Electrician", "Carpenter", "AC Repair & Servicing", "Pest Control",
+    "IT Freelancer (Python/Data)", "Web & App Developer", "Video Editor & AI Creator",
+    "Tractor & Harvester Rental", "JCB & Crane Rental", "Mini Truck (Tata Ace)", "Bike Taxi", "Cab Booking",
+    "CA & GST Filing", "Pragya Kendra (CSC) & Forms", "Lawyer & Notary", "Pension & PF Help",
+    "Real Estate (Rent/Buy)", "PG & Hostel Booking", "Commercial Shop Rent",
+    "Doctor Appointment", "Medicine Delivery", "Lab Test at Home", "Ambulance Booking",
+    "Men's Salon", "Women's Parlour", "Bridal Makeup", "Mehndi Artist",
+    "Tent House & Decorator", "Caterers (Halwai)", "Pandit Ji for Puja",
+    "Labour Contractor (Daily Wage)", "Rajmistri (Mason)", "Security Guards/Bouncers",
+    "Online Kabaadiwala (Scrap)", "E-Auction & Properties"
+])
 
-# Create files if missing
 for file, cols in [
     (REQUIREMENTS_FILE, ["Timestamp", "Phone", "Category", "Requirement", "Location", "Status"]),
     (PARTNERS_FILE, ["Phone", "Password", "Business_Name", "Category", "Verification_Status", "Base_Price"]),
@@ -30,13 +36,30 @@ for file, cols in [
     if not os.path.exists(file):
         pd.DataFrame(columns=cols).to_csv(file, index=False)
 
-# Seed dummy products with images if catalog is empty
+# Seed Mega Authentic Catalog with Colorful Symbolic Pictures
 if not os.path.exists(PRODUCTS_FILE):
     dummy_products = pd.DataFrame([
-        {"Item_Name": "Aashirvaad Atta (5kg)", "Category": "Grocery & Daily Needs", "Price": "220", "Image_URL": "https://placehold.co/300x300/e2e8f0/1e293b?text=Atta+5kg"},
-        {"Item_Name": "Amul Taaza Milk (1L)", "Category": "Grocery & Daily Needs", "Price": "68", "Image_URL": "https://placehold.co/300x300/e2e8f0/1e293b?text=Amul+Milk"},
-        {"Item_Name": "AC Deep Servicing", "Category": "AC Repair & Servicing", "Price": "499", "Image_URL": "https://placehold.co/300x300/e2e8f0/1e293b?text=AC+Service"},
-        {"Item_Name": "Tata Ace (Chota Hathi)", "Category": "Mini Truck (Tata Ace) Booking", "Price": "800", "Image_URL": "https://placehold.co/300x300/e2e8f0/1e293b?text=Tata+Ace"},
+        # Grocery & Daily
+        {"Item_Name": "Aashirvaad Atta (5kg)", "Category": "Grocery & Daily Needs", "Price": "220", "Image_URL": "https://placehold.co/400x300/f59e0b/ffffff?text=Atta+(5kg)"},
+        {"Item_Name": "Amul Taaza Milk (1L)", "Category": "Dairy & Milk Delivery", "Price": "68", "Image_URL": "https://placehold.co/400x300/3b82f6/ffffff?text=Amul+Milk"},
+        {"Item_Name": "Fresh Onion (1kg)", "Category": "Fresh Vegetables & Fruits", "Price": "35", "Image_URL": "https://placehold.co/400x300/ec4899/ffffff?text=Fresh+Onion"},
+        # Home Services
+        {"Item_Name": "AC Deep Servicing", "Category": "AC Repair & Servicing", "Price": "499", "Image_URL": "https://placehold.co/400x300/06b6d4/ffffff?text=AC+Service"},
+        {"Item_Name": "Plumber (Visit Charge)", "Category": "Plumber", "Price": "199", "Image_URL": "https://placehold.co/400x300/64748b/ffffff?text=Plumber+Visit"},
+        # Logistics & Rentals
+        {"Item_Name": "Tata Ace (Chota Hathi)", "Category": "Mini Truck (Tata Ace)", "Price": "800", "Image_URL": "https://placehold.co/400x300/eab308/ffffff?text=Tata+Ace+Booking"},
+        {"Item_Name": "Mahindra Tractor Rental", "Category": "Tractor & Harvester Rental", "Price": "1200", "Image_URL": "https://placehold.co/400x300/ef4444/ffffff?text=Tractor+Rental"},
+        # IT & Professional
+        {"Item_Name": "GST Registration", "Category": "CA & GST Filing", "Price": "1499", "Image_URL": "https://placehold.co/400x300/10b981/ffffff?text=GST+Filing"},
+        {"Item_Name": "Excel Data Management", "Category": "IT Freelancer (Python/Data)", "Price": "999", "Image_URL": "https://placehold.co/400x300/8b5cf6/ffffff?text=Data+Freelancer"},
+        {"Item_Name": "JMMMSY / Pension Form Help", "Category": "Pragya Kendra (CSC) & Forms", "Price": "50", "Image_URL": "https://placehold.co/400x300/14b8a6/ffffff?text=CSC+Form+Help"},
+        # Real Estate & Labour
+        {"Item_Name": "Rajmistri (1 Day)", "Category": "Rajmistri (Mason)", "Price": "700", "Image_URL": "https://placehold.co/400x300/d97706/ffffff?text=Rajmistri"},
+        {"Item_Name": "Labour (1 Day)", "Category": "Labour Contractor (Daily Wage)", "Price": "400", "Image_URL": "https://placehold.co/400x300/f97316/ffffff?text=Daily+Labour"},
+        {"Item_Name": "2BHK Flat for Rent", "Category": "Real Estate (Rent/Buy)", "Price": "8500", "Image_URL": "https://placehold.co/400x300/6366f1/ffffff?text=2BHK+Rent"},
+        # Events & Healthcare
+        {"Item_Name": "Bridal Mehndi Design", "Category": "Mehndi Artist", "Price": "2100", "Image_URL": "https://placehold.co/400x300/be185d/ffffff?text=Bridal+Mehndi"},
+        {"Item_Name": "Full Body Health Checkup", "Category": "Lab Test at Home", "Price": "1299", "Image_URL": "https://placehold.co/400x300/f43f5e/ffffff?text=Lab+Test"}
     ])
     dummy_products.to_csv(PRODUCTS_FILE, index=False)
 
@@ -50,16 +73,31 @@ def save_data(file_name, new_data):
 def overwrite_data(file_name, df):
     df.to_csv(file_name, index=False)
 
-# CSS for Product Grid and UI
+# ==========================================
+# 2. VIBRANT PROFESSIONAL UI CSS
+# ==========================================
 st.markdown("""
     <style>
-    .stApp { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%); }
-    [data-testid="stSidebar"] * { color: #ffffff !important; }
-    .support-box { background-color: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid rgba(255,255,255,0.3); }
-    .product-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px;}
-    .product-price { color: #16a34a; font-size: 20px; font-weight: 800; margin: 10px 0;}
-    .product-title { font-size: 16px; font-weight: 700; color: #1e293b; height: 45px; overflow: hidden;}
+    .stApp { background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    [data-testid="stSidebar"] { background: linear-gradient(180deg, #020617 0%, #1e3a8a 100%); }
+    [data-testid="stSidebar"] * { color: #f8fafc !important; }
+    
+    .support-box { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-top: 20px; border: 1px solid rgba(255,255,255,0.1); }
+    
+    .product-card { 
+        background: white; border-radius: 16px; border: 1px solid #e2e8f0; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); text-align: center; margin-bottom: 25px; overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2); border-color: #3b82f6; }
+    .product-image-container { width: 100%; height: 180px; overflow: hidden; background: #f1f5f9; }
+    .product-image-container img { width: 100%; height: 100%; object-fit: cover; }
+    .product-info { padding: 15px; }
+    .product-cat { font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
+    .product-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 8px 0; height: 50px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;}
+    .product-price { color: #059669; font-size: 24px; font-weight: 900; margin-bottom: 10px;}
+    
+    h1, h2, h3 { color: #0f172a; font-weight: 800; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -67,108 +105,113 @@ if 'logged_in_partner' not in st.session_state:
     st.session_state['logged_in_partner'] = None
 
 # ==========================================
-# 2. APP NAVIGATION & SUPPORT
+# 3. APP NAVIGATION & SUPPORT
 # ==========================================
-st.sidebar.title("📱 KuchhV Super App")
+st.sidebar.title("🇮🇳 KuchhV Super App")
+st.sidebar.caption("India's Hyperlocal Engine")
 st.sidebar.write("---")
-app_mode = st.sidebar.radio("Main Menu:", ["🏠 Visual Marketplace", "📢 Requirement Hub", "💼 Partner Portal", "⚙️ Admin Control Room"])
+app_mode = st.sidebar.radio("Main Menu:", ["🛍️ Explore Marketplace", "📢 Requirement Hub", "💼 Partner Portal", "⚙️ Admin Control Room"])
 st.sidebar.write("---")
 
 st.sidebar.markdown("""
 <div class='support-box'>
-    <h3 style='color: white; margin-bottom: 5px;'>🎧 24/7 Support</h3>
-    <p style='margin: 0; font-weight: bold;'>📞 8521413089</p>
-    <p style='margin: 0; font-size: 12px;'>✉️ Rahultiwary03@gmail.com</p>
+    <h3 style='color: white; margin-bottom: 5px; font-size: 16px;'>🎧 24/7 Customer Support</h3>
+    <p style='font-size: 13px; color: #94a3b8; margin-bottom: 10px;'>Need help with booking?</p>
+    <p style='margin: 0; font-weight: bold; font-size: 18px;'>📞 8521413089</p>
+    <p style='margin: 0; font-size: 13px; color: #cbd5e1;'>✉️ Rahultiwary03@gmail.com</p>
 </div>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. CUSTOMER MARKETPLACE (Visual Catalog)
+# 4. CUSTOMER MARKETPLACE (Colorful Catalog)
 # ==========================================
-if app_mode == "🏠 Visual Marketplace":
-    st.title("🛒 KuchhV Marketplace")
-    st.markdown("### Browse Items & Services with Lowest Prices")
+if app_mode == "🛍️ Explore Marketplace":
+    st.title("🛍️ KuchhV Marketplace")
+    st.markdown("### Browse thousands of authentic products and professional services.")
     
-    selected_cat = st.selectbox("🔍 Filter by Category:", ["All Categories"] + INDIAN_SERVICES)
+    selected_cat = st.selectbox("🔍 Filter by Category:", ["All India Categories"] + INDIAN_SERVICES)
     
     products_df = load_data(PRODUCTS_FILE)
-    if selected_cat != "All Categories":
+    if selected_cat != "All India Categories":
         products_df = products_df[products_df['Category'] == selected_cat]
         
     if not products_df.empty:
         st.write("---")
-        # Create a grid of 4 columns
-        cols = st.columns(4)
+        cols = st.columns(3) # 3 columns for bigger, beautiful cards
         
         for index, row in products_df.iterrows():
-            with cols[index % 4]: # Distribute items across columns
-                st.markdown(f"<div class='product-card'>", unsafe_allow_html=True)
-                st.image(row['Image_URL'], use_container_width=True)
-                st.markdown(f"<div class='product-title'>{row['Item_Name']}</div>", unsafe_allow_html=True)
-                st.markdown(f"<div class='product-price'>₹{row['Price']}</div>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+            with cols[index % 3]:
+                st.markdown(f"""
+                <div class='product-card'>
+                    <div class='product-image-container'>
+                        <img src="{row['Image_URL']}" alt="{row['Item_Name']}">
+                    </div>
+                    <div class='product-info'>
+                        <div class='product-cat'>{row['Category']}</div>
+                        <div class='product-title'>{row['Item_Name']}</div>
+                        <div class='product-price'>₹{row['Price']}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
                 
-                with st.popover(f"Buy {row['Item_Name']}"):
+                with st.popover(f"⚡ Book / Buy Now", use_container_width=True):
                     with st.form(f"order_form_{index}"):
-                        st.write(f"**Order:** {row['Item_Name']}")
-                        phone = st.text_input("Enter Mobile No.")
-                        if st.form_submit_button("Confirm Order"):
+                        st.markdown(f"**Confirm Order:** {row['Item_Name']}")
+                        phone = st.text_input("Enter Mobile No. to Confirm:")
+                        if st.form_submit_button("Place Order Securely"):
                             if phone:
                                 save_data(ORDERS_FILE, {
                                     "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                    "Customer_Phone": phone,
-                                    "Item_Name": row['Item_Name'],
-                                    "Category": row['Category'],
-                                    "Price": row['Price'],
-                                    "Partner_Assigned": "Unassigned", # Goes to Admin pool
-                                    "Status": "Pending Admin/Partner Action"
+                                    "Customer_Phone": phone, "Item_Name": row['Item_Name'],
+                                    "Category": row['Category'], "Price": row['Price'],
+                                    "Partner_Assigned": "Unassigned", "Status": "Pending Admin Verification"
                                 })
-                                st.success("Order Placed! Our team will contact you.")
+                                st.success("✅ Order Placed! Admin will assign the best partner.")
                             else:
                                 st.error("Phone number is required.")
     else:
         st.info("No items found in this category yet. Admin is updating the catalog!")
 
 # ==========================================
-# 4. REQUIREMENT HUB
+# 5. REQUIREMENT HUB
 # ==========================================
 elif app_mode == "📢 Requirement Hub":
     st.title("📢 Custom Requirement Hub")
-    st.write("If you can't find an item with a photo, just post your requirement here!")
+    st.write("If it's not in the catalog, just post it here. We will find it for you!")
     
     with st.container():
         with st.form("req_form"):
             col1, col2 = st.columns(2)
             with col1:
-                req_cat = st.selectbox("Category", INDIAN_SERVICES)
-                loc = st.text_input("Pincode / City")
+                req_cat = st.selectbox("Select Relevant Category", INDIAN_SERVICES)
+                loc = st.text_input("Delivery Pincode / Area")
             with col2:
-                phone = st.text_input("Mobile Number")
-            desc = st.text_area("Detail your exact need:")
-            if st.form_submit_button("Broadcast to Partners 🚀"):
+                phone = st.text_input("Your Mobile Number")
+            desc = st.text_area("Describe exactly what you need in detail:")
+            if st.form_submit_button("Broadcast Requirement 🚀"):
                 if phone and desc and loc:
                     save_data(REQUIREMENTS_FILE, {
                         "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         "Phone": phone, "Category": req_cat, "Requirement": desc, "Location": loc, "Status": "Open"
                     })
-                    st.success("✅ Broadcasted!")
+                    st.success("✅ Broadcasted! Local partners will contact you.")
                 else:
                     st.error("Please fill all details.")
 
 # ==========================================
-# 5. PARTNER PORTAL
+# 6. PARTNER PORTAL
 # ==========================================
 elif app_mode == "💼 Partner Portal":
     st.title("💼 Partner Business Portal")
     if st.session_state['logged_in_partner'] is None:
-        t1, t2 = st.tabs(["🔐 Login", "📝 Register Business"])
+        t1, t2 = st.tabs(["🔐 Login", "📝 Register New Business"])
         with t2:
             with st.form("reg_form"):
                 biz_name = st.text_input("Business Name")
                 phone = st.text_input("Mobile Number")
                 pwd = st.text_input("Password", type="password")
                 cat = st.selectbox("Category", INDIAN_SERVICES)
-                if st.form_submit_button("Register"):
+                if st.form_submit_button("Register Account"):
                     pdf = load_data(PARTNERS_FILE)
                     if phone in pdf['Phone'].values:
                         st.error("Already registered!")
@@ -178,7 +221,7 @@ elif app_mode == "💼 Partner Portal":
         with t1:
             l_phone = st.text_input("Mobile Number ")
             l_pwd = st.text_input("Password ", type="password")
-            if st.button("Login Now"):
+            if st.button("Login"):
                 pdf = load_data(PARTNERS_FILE)
                 user = pdf[(pdf['Phone'] == l_phone) & (pdf['Password'] == l_pwd)]
                 if not user.empty:
@@ -201,40 +244,39 @@ elif app_mode == "💼 Partner Portal":
         st.dataframe(my_orders, use_container_width=True)
 
 # ==========================================
-# 6. ADMIN CONTROL ROOM (Unassigned Orders & Catalog)
+# 7. ADMIN CONTROL ROOM
 # ==========================================
 elif app_mode == "⚙️ Admin Control Room":
     st.title("⚙️ Super Admin Dashboard")
+    st.write("Complete system control: Manage Catalog, Orders, and Partners.")
     
     t_orders, t_catalog, t_partners = st.tabs(["🚨 Manage Orders", "📸 Global Catalog", "👥 Manage Partners"])
     
     with t_orders:
-        st.subheader("Order Management")
+        st.subheader("Order Management & Assignment")
         odf = load_data(ORDERS_FILE)
-        
-        # Highlight Unassigned Orders for Admin
         unassigned = odf[odf['Partner_Assigned'] == 'Unassigned']
         if not unassigned.empty:
-            st.error(f"🚨 ALERT: {len(unassigned)} Order(s) need a partner assigned!")
+            st.error(f"🚨 ACTION REQUIRED: {len(unassigned)} Order(s) need a partner assigned!")
             
         edited_odf = st.data_editor(odf, num_rows="dynamic", use_container_width=True, key="edit_orders")
         if st.button("💾 Save Order Changes"):
             overwrite_data(ORDERS_FILE, edited_odf)
-            st.success("Orders updated!")
+            st.success("Orders updated successfully!")
             
     with t_catalog:
-        st.subheader("Add/Edit Products & Photos")
-        st.info("Paste image URLs (e.g., from Google Images or Drive) in the 'Image_URL' column.")
+        st.subheader("Expand Platform Catalog")
+        st.info("💡 Tip: To add a real photo, paste any image link from the internet in the 'Image_URL' column.")
         prodf = load_data(PRODUCTS_FILE)
         edited_prodf = st.data_editor(prodf, num_rows="dynamic", use_container_width=True, key="edit_catalog")
-        if st.button("💾 Save Catalog"):
+        if st.button("💾 Save Catalog Updates"):
             overwrite_data(PRODUCTS_FILE, edited_prodf)
-            st.success("Catalog updated!")
+            st.success("Catalog updated successfully!")
 
     with t_partners:
         st.subheader("Partner Database")
         pdf = load_data(PARTNERS_FILE)
         edited_pdf = st.data_editor(pdf, num_rows="dynamic", use_container_width=True, key="edit_partners")
-        if st.button("💾 Save Partners"):
+        if st.button("💾 Save Partner Approvals"):
             overwrite_data(PARTNERS_FILE, edited_pdf)
-            st.success("Partners updated!")
+            st.success("Partners updated successfully!")
