@@ -8,9 +8,13 @@ from datetime import datetime
 # ==========================================
 st.set_page_config(page_title="KuchhV | Super App", layout="wide", page_icon="🚀")
 
-# File names changed to v2 so old data doesn't crash the new structure
+REQUIREMENTS_FILE = "requirements_v2.csv"
 PARTNERS_FILE = "partners_v2.csv"
 ORDERS_FILE = "orders_v2.csv"
+
+# Create CSV files if they don't exist
+if not os.path.exists(REQUIREMENTS_FILE):
+    pd.DataFrame(columns=["Timestamp", "Customer_Phone", "Category", "Description", "Location", "Status"]).to_csv(REQUIREMENTS_FILE, index=False)
 
 if not os.path.exists(PARTNERS_FILE):
     pd.DataFrame(columns=["Phone", "Password", "Business_Name", "Category", "Verification_Status"]).to_csv(PARTNERS_FILE, index=False)
@@ -19,24 +23,27 @@ if not os.path.exists(ORDERS_FILE):
     pd.DataFrame(columns=["Timestamp", "Customer_Phone", "Category", "Requirement", "Status", "Partner_Assigned"]).to_csv(ORDERS_FILE, index=False)
 
 def load_data(file_name):
-    # Ensure phone numbers are treated as strings
-    return pd.read_csv(file_name, dtype={"Phone": str, "Customer_Phone": str, "Password": str})
+    if file_name == PARTNERS_FILE:
+        return pd.read_csv(file_name, dtype={"Phone": str, "Password": str})
+    return pd.read_csv(file_name, dtype={"Customer_Phone": str})
 
 def save_data(file_name, new_data):
     df = pd.DataFrame([new_data])
     df.to_csv(file_name, mode='a', header=False, index=False)
 
-# Custom CSS for UI
+# Custom Colorful CSS
 st.markdown("""
     <style>
     .stApp { background-color: #f8fafc; }
     [data-testid="stSidebar"] { background: linear-gradient(180deg, #1e3a8a 0%, #3b82f6 100%); color: white !important; }
     [data-testid="stSidebar"] * { color: white !important; }
-    .category-box { padding: 20px; border-radius: 12px; background: #ffffff; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .category-box { padding: 25px 15px; border-radius: 16px; background: #ffffff; text-align: center; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: 0.3s; }
+    .category-box:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); border-color: #3b82f6; }
+    .cat-icon { font-size: 40px; margin-bottom: 10px; display: block; }
+    .cat-title { font-size: 15px; font-weight: 700; color: #1e293b; }
     </style>
 """, unsafe_allow_html=True)
 
-# Initialize Session State for Login
 if 'logged_in_partner' not in st.session_state:
     st.session_state['logged_in_partner'] = None
 
@@ -45,27 +52,44 @@ if 'logged_in_partner' not in st.session_state:
 # ==========================================
 st.sidebar.title("📱 KuchhV Hub")
 st.sidebar.write("---")
-app_mode = st.sidebar.radio("Navigation Menu:", ["🏠 Customer App", "💼 Partner Portal", "⚙️ Admin Dashboard"])
+app_mode = st.sidebar.radio("Navigation Menu:", ["🏠 Customer App", "📢 Requirement Hub", "💼 Partner Portal", "⚙️ Admin Dashboard"])
 st.sidebar.write("---")
 
 # ==========================================
-# 3. CUSTOMER APP (Order & Availability Logic)
+# 3. CUSTOMER APP (Categories & Direct Booking)
 # ==========================================
 if app_mode == "🏠 Customer App":
-    st.title("🛒 KuchhV - Har Zarurat, Ek Platform.")
+    st.title("🛒 KuchhV")
+    st.markdown("### Har Zarurat, Ek Platform.")
     
-    st.markdown("### 1. Aapko kya service chahiye?")
-    category_list = ["Grocery & Retail", "Home Repairs", "IT Freelancers", "Asset Rentals", "Bike Taxi", "Healthcare"]
+    # Beautiful Category Grid
+    st.write("---")
+    st.subheader("🔥 Top Services Near You")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown("<div class='category-box'><span class='cat-icon'>🍎</span><span class='cat-title'>Grocery & Retail</span></div>", unsafe_allow_html=True)
+        st.markdown("<div class='category-box'><span class='cat-icon'>🏠</span><span class='cat-title'>Real Estate</span></div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown("<div class='category-box'><span class='cat-icon'>🔧</span><span class='cat-title'>Home Repairs</span></div>", unsafe_allow_html=True)
+        st.markdown("<div class='category-box'><span class='cat-icon'>📄</span><span class='cat-title'>E-Gov & CSC</span></div>", unsafe_allow_html=True)
+    with col3:
+        st.markdown("<div class='category-box'><span class='cat-icon'>💻</span><span class='cat-title'>IT Freelancers</span></div>", unsafe_allow_html=True)
+        st.markdown("<div class='category-box'><span class='cat-icon'>🏥</span><span class='cat-title'>Healthcare</span></div>", unsafe_allow_html=True)
+    with col4:
+        st.markdown("<div class='category-box'><span class='cat-icon'>🚜</span><span class='cat-title'>Asset Rentals</span></div>", unsafe_allow_html=True)
+        st.markdown("<div class='category-box'><span class='cat-icon'>🛵</span><span class='cat-title'>Bike Taxi</span></div>", unsafe_allow_html=True)
+
+    st.write("---")
+    st.subheader("⚡ Book a Direct Service")
+    
+    category_list = ["Grocery & Retail", "Home Repairs", "IT Freelancers", "Asset Rentals", "Bike Taxi", "Healthcare", "E-Gov & CSC", "Real Estate"]
     selected_category = st.selectbox("Category chunein:", category_list)
     
-    st.markdown("### 2. Available Partners Check")
     partner_df = load_data(PARTNERS_FILE)
-    
-    # Filter only Verified partners in the selected category
     available_partners = partner_df[(partner_df['Category'] == selected_category) & (partner_df['Verification_Status'] == 'Verified ✅')]
     
     if not available_partners.empty:
-        st.success(f"✅ {len(available_partners)} Verified Partner(s) available in your area!")
+        st.success(f"✅ {len(available_partners)} Verified Partner(s) available!")
         st.dataframe(available_partners[['Business_Name', 'Category']], use_container_width=True)
         
         with st.form("book_service_form"):
@@ -84,24 +108,43 @@ if app_mode == "🏠 Customer App":
                 st.success("Order Placed Successfully! Partner will contact you.")
     else:
         st.error("⚠️ Koi verified partner abhi is category me available nahi hai.")
-        st.info("💡 **Solution:** Apni zarurat niche likh dein, jaise hi koi partner aayega hum aapko connect karenge (Requirement Hub).")
-        with st.form("requirement_hub_form"):
-            customer_phone = st.text_input("Your Mobile Number:")
-            requirement = st.text_area("Apni requirement detail me likhein:")
-            if st.form_submit_button("Post to Requirement Hub"):
-                new_order = {
-                    "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "Customer_Phone": customer_phone,
-                    "Category": selected_category,
-                    "Requirement": requirement,
-                    "Status": "Waitlist (Requirement Hub)",
-                    "Partner_Assigned": "None"
-                }
-                save_data(ORDERS_FILE, new_order)
-                st.success("Request added to Hub! Local partners notified.")
+        st.info("💡 **Tip:** Aap left menu se 'Requirement Hub' me jaakar apni demand post kar sakte hain.")
 
 # ==========================================
-# 4. PARTNER PORTAL (Login & Registration)
+# 4. REQUIREMENT HUB
+# ==========================================
+elif app_mode == "📢 Requirement Hub":
+    st.title("📢 The Requirement Hub")
+    st.info("💡 **Can't find a direct partner?** Post your custom requirement here and let local verified partners contact you.")
+    
+    with st.form("requirement_form"):
+        col_a, col_b = st.columns(2)
+        with col_a:
+            req_type = st.selectbox("Select Category", ["Bulk Labour/Manpower", "IT/Developer", "Event & Catering", "Logistics/Truck", "Other"])
+            location = st.text_input("Pincode / City Area (e.g. 825401)")
+        with col_b:
+            phone = st.text_input("Your Mobile Number")
+            
+        description = st.text_area("Detail your exact requirement here:")
+        
+        submitted = st.form_submit_button("🚀 Broadcast to Local Partners")
+        if submitted and description and location and phone:
+            new_req = {
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "Customer_Phone": phone,
+                "Category": req_type,
+                "Description": description,
+                "Location": location,
+                "Status": "Open"
+            }
+            save_data(REQUIREMENTS_FILE, new_req)
+            st.success("✅ Request Broadcasted Successfully! Partners will contact you soon.")
+            st.balloons()
+        elif submitted:
+            st.error("⚠️ Please fill in all details (Phone, Description, Location).")
+
+# ==========================================
+# 5. PARTNER PORTAL
 # ==========================================
 elif app_mode == "💼 Partner Portal":
     st.title("💼 Partner Business Portal")
@@ -110,12 +153,12 @@ elif app_mode == "💼 Partner Portal":
         tab_login, tab_signup = st.tabs(["🔐 Login", "📝 New Registration"])
         
         with tab_signup:
-            st.subheader("Partner Registration")
+            st.subheader("Join the KuchhV Network")
             with st.form("signup_form"):
                 phone = st.text_input("Mobile Number")
                 password = st.text_input("Create Password", type="password")
                 business_name = st.text_input("Business / Shop Name")
-                category = st.selectbox("Category", ["Grocery & Retail", "Home Repairs", "IT Freelancers", "Asset Rentals", "Bike Taxi", "Healthcare"])
+                category = st.selectbox("Category", ["Grocery & Retail", "Home Repairs", "IT Freelancers", "Asset Rentals", "Bike Taxi", "Healthcare", "E-Gov & CSC", "Real Estate"])
                 
                 if st.form_submit_button("Register"):
                     partner_df = load_data(PARTNERS_FILE)
@@ -124,12 +167,12 @@ elif app_mode == "💼 Partner Portal":
                     else:
                         new_partner = {"Phone": phone, "Password": password, "Business_Name": business_name, "Category": category, "Verification_Status": "Pending"}
                         save_data(PARTNERS_FILE, new_partner)
-                        st.success("Registration Successful! Please wait for Admin Approval.")
+                        st.success("Registration Successful! Awaiting Admin Approval.")
                         
         with tab_login:
             st.subheader("Partner Login")
-            phone_login = st.text_input("Enter Mobile Number")
-            pass_login = st.text_input("Enter Password", type="password")
+            phone_login = st.text_input("Enter Mobile Number ")
+            pass_login = st.text_input("Enter Password ", type="password")
             
             if st.button("Login"):
                 partner_df = load_data(PARTNERS_FILE)
@@ -151,25 +194,32 @@ elif app_mode == "💼 Partner Portal":
             st.session_state['logged_in_partner'] = None
             st.rerun()
             
-        st.subheader("Your Live Orders & Leads")
+        st.subheader("Direct Orders for You")
         orders_df = load_data(ORDERS_FILE)
         st.dataframe(orders_df, use_container_width=True)
+        
+        st.subheader("Live Requirements (Hub)")
+        req_df = load_data(REQUIREMENTS_FILE)
+        st.dataframe(req_df, use_container_width=True)
 
 # ==========================================
-# 5. ADMIN DASHBOARD (Approval Process)
+# 6. ADMIN DASHBOARD
 # ==========================================
 elif app_mode == "⚙️ Admin Dashboard":
     st.title("⚙️ Super Admin Center")
     
     partner_df = load_data(PARTNERS_FILE)
-    st.subheader("Partner KYC & Verification")
     
+    st.subheader("Partner KYC & Verification")
     if not partner_df.empty:
-        st.write("Edit the 'Verification_Status' below to approve partners.")
+        st.warning("⚠️ Action Required: Click on 'Verification_Status' below to approve or reject.")
+        
+        # Hide password column for admin view
+        display_df = partner_df.drop(columns=['Password'])
+        
         edited_partner_df = st.data_editor(
-            partner_df,
+            display_df,
             column_config={
-                "Password": None, # Hide passwords from admin view for security
                 "Verification_Status": st.column_config.SelectboxColumn(
                     "Status", options=["Pending", "Verified ✅", "Rejected ❌"], required=True
                 )
@@ -177,7 +227,6 @@ elif app_mode == "⚙️ Admin Dashboard":
             use_container_width=True
         )
         if st.button("💾 Save Verification Status"):
-            # Update the original dataframe with edited status while keeping passwords intact
             partner_df['Verification_Status'] = edited_partner_df['Verification_Status']
             partner_df.to_csv(PARTNERS_FILE, index=False)
             st.success("Status Updated Successfully!")
