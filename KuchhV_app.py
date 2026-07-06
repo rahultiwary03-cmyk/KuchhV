@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import os
 import random
-import difflib
 from datetime import datetime
 
 # ==========================================
@@ -10,48 +9,43 @@ from datetime import datetime
 # ==========================================
 st.set_page_config(page_title="KuchhV | Super App", layout="centered", initial_sidebar_state="collapsed")
 
-PRODUCTS_FILE = "mega_catalog_v8.csv"
+PRODUCTS_FILE = "mega_catalog_v7.csv"
 
-@st.cache_data
+# Fast Generator for 10,000+ Items (Runs only once)
 def generate_mega_catalog():
-    # Massive Pan-India Categories
     categories = {
-        "Grocery & Staples": ["Rice", "Dal", "Atta", "Refined Oil", "Mustard Oil", "Sugar", "Salt", "Spices", "Poha", "Besan", "Maida", "Dry Fruits"],
-        "Fresh Produce & Dairy": ["Potato", "Onion", "Tomato", "Milk 1L", "Paneer 1kg", "Curd", "Apple", "Banana", "Mango"],
-        "Local Shops & Eateries": ["Samosa", "Jalebi", "Rasgulla", "Kaju Katli", "Namkeen", "Cold Drink", "Burger", "Pizza"],
-        "Home Repairs & Maintenance": ["Plumber Visit", "Electrician Visit", "AC Service", "Washing Machine Repair", "RO Repair", "Carpenter"],
-        "Freelance & IT Services": ["Data Entry (Excel)", "Python Developer", "Website Setup", "Logo Design", "Video Editing", "Social Media Manager"],
-        "Local Jobs & Hiring": ["Data Entry Operator", "Delivery Boy", "Shop Assistant", "Cook (Home Kitchen)", "Mechanic", "Security Guard", "Bouncer"],
-        "Heavy Machinery & Transport": ["Tractor Rental", "JCB Booking", "Tata Ace Booking", "Concrete Mixer", "Water Tanker", "Bike Taxi", "Cab Booking"],
-        "E-Governance & Paperwork": ["Pension Form Fill", "JMMMSY Registration", "GST Filing", "ITR Return", "Aadhaar Update Help", "Notary Affidavit"],
-        "Fashion & Apparel": ["Cotton T-Shirt", "Typography Shirt", "Jeans", "Formal Pants", "Sneakers", "Socks", "Cap"],
-        "Events & Ceremonies": ["Tent House Set", "DJ Booking", "Halwai (Caterer)", "Pandit Ji (Puja)", "Bridal Makeup", "Mehndi Artist"]
+        "Grocery & Staples": ["Rice", "Dal", "Atta", "Oil", "Sugar", "Salt", "Spices", "Poha", "Besan", "Maida"],
+        "Fresh Vegetables": ["Potato", "Onion", "Tomato", "Cabbage", "Carrot", "Spinach", "Capsicum", "Garlic", "Ginger"],
+        "Electronics & Gadgets": ["Earphones", "Charger", "Power Bank", "Smart Watch", "USB Cable", "Mouse", "Keyboard"],
+        "Local Shops (Sweets/Snacks)": ["Samosa", "Jalebi", "Rasgulla", "Paneer", "Ladoo", "Namkeen", "Kaju Katli"],
+        "Home Services": ["Plumber Visit", "Electrician Visit", "AC Repair", "Washing Machine Repair", "House Cleaning"],
+        "Local Jobs": ["Data Entry Operator", "Delivery Partner", "Shop Assistant", "Cook (Home Kitchen)", "Mechanic"],
+        "Heavy Machinery & Rentals": ["Tractor Rental", "JCB Booking", "Tata Ace", "Concrete Mixer", "Water Tanker"],
+        "Apparel & Fashion": ["Cotton T-Shirt (Typography)", "Jeans", "Formal Shirt", "Sports Shoes", "Socks", "Cap"]
     }
     
-    brands = ["Premium", "Standard", "Local", "Fresh", "Super", "Gold", "Classic", "Verified"]
-    districts = ["Chatra", "Ranchi", "Hazaribagh", "Patna", "Gaya", "Muzaffarpur", "Kanpur", "Delhi", "Pan-India"]
+    brands = ["Premium", "Standard", "Local", "Fresh", "Super", "Gold", "Classic"]
     data = []
     
-    # Generate 10,000+ items
-    for i in range(10100):
+    # Generate 10,000 items mathematically
+    for i in range(10050):
         cat = random.choice(list(categories.keys()))
         item_base = random.choice(categories[cat])
         brand = random.choice(brands)
-        district = random.choice(districts)
         
-        # Dynamic Formatting based on category
-        if "Jobs" in cat:
+        # Format pricing and names based on category
+        if cat == "Local Jobs":
             item_name = f"{item_base} ({brand} Firm)"
-            price = random.randint(7000, 25000) # Monthly Salary
-            img_text = "Job+Vacancy"
+            price = random.randint(7000, 18000) # Monthly Salary
+            img_text = "Job"
             color = "10b981"
-        elif "Services" in cat or "Repairs" in cat or "Governance" in cat:
+        elif cat == "Home Services":
             item_name = f"{item_base} - {brand} Service"
-            price = random.randint(99, 1500)
-            img_text = item_base.replace(" ", "+")
+            price = random.randint(149, 999)
+            img_text = "Service"
             color = "3b82f6"
         else:
-            item_name = f"{brand} {item_base} ({random.randint(1, 5)} kg/pc)"
+            item_name = f"{brand} {item_base} - Var {random.randint(1, 500)}"
             price = random.randint(30, 2500)
             img_text = item_base.replace(" ", "+")
             color = "f59e0b"
@@ -63,74 +57,60 @@ def generate_mega_catalog():
             "Item_Name": item_name,
             "Category": cat,
             "Price": price,
-            "Location": district,
             "Image_URL": img_url,
+            "Partner_Type": "Verified"
         })
     
     df = pd.DataFrame(data)
     df.to_csv(PRODUCTS_FILE, index=False)
     return df
 
-# Initialize Data
 if not os.path.exists(PRODUCTS_FILE):
-    with st.spinner("Generating 10,000+ Items Mega Database for all districts..."):
+    with st.spinner("Generating 10,000+ Items Mega Database..."):
         df_catalog = generate_mega_catalog()
 else:
     df_catalog = pd.read_csv(PRODUCTS_FILE)
 
 # ==========================================
-# 2. AI SMART SEARCH ENGINE (Fuzzy Logic)
-# ==========================================
-def smart_search(query, df):
-    query = str(query).lower().strip()
-    if not query:
-        return pd.DataFrame()
-        
-    # 1. Direct/Substring Match
-    exact_matches = df[df['Item_Name'].str.lower().str.contains(query) | df['Category'].str.lower().str.contains(query)]
-    if not exact_matches.empty:
-        return exact_matches
-        
-    # 2. AI Fuzzy Match (Auto-corrects Typos like 'palambar' -> 'plumber')
-    all_words = set(" ".join(df['Item_Name'].str.lower().tolist() + df['Category'].str.lower().tolist()).split())
-    close_words = difflib.get_close_matches(query, all_words, n=3, cutoff=0.5)
-    
-    if close_words:
-        # If it finds a typo correction, search using the corrected words
-        pattern = '|'.join(close_words)
-        fuzzy_matches = df[df['Item_Name'].str.lower().str.contains(pattern, regex=True) | df['Category'].str.lower().str.contains(pattern, regex=True)]
-        return fuzzy_matches
-        
-    return pd.DataFrame() # Still empty
-
-# ==========================================
-# 3. MOBILE-FIRST UI CSS
+# 2. MOBILE-FIRST CSS DESIGN
 # ==========================================
 st.markdown("""
     <style>
+    /* Simulate Mobile App Container */
     .stApp { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; }
-    .app-header { background: #ffffff; padding: 15px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;}
+    
+    /* Header styling */
+    .app-header { background: #ffffff; padding: 15px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 999; display: flex; justify-content: space-between; align-items: center;}
     .loc-text { font-size: 13px; color: #4b5563; font-weight: 600;}
     .loc-title { font-size: 16px; color: #111827; font-weight: 800;}
     
-    .search-container { padding: 15px; background: white; border-bottom: 1px solid #e5e7eb; }
+    /* Custom Order Voice Box (Like your screenshot) */
+    .custom-order-box { background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 16px; color: white; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);}
+    .custom-order-box h3 { margin: 0; font-size: 18px; color: white;}
+    .voice-input-mock { background: rgba(255,255,255,0.2); padding: 12px; border-radius: 8px; margin-top: 10px; display: flex; justify-content: space-between;}
     
-    .item-card { background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; position: relative; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
-    .item-img { width: 100%; height: 160px; object-fit: cover; background: #e5e7eb;}
-    .item-info { padding: 12px;}
-    .item-title { font-size: 15px; font-weight: 700; color: #1f2937; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-    .item-cat { font-size: 12px; color: #6b7280; margin-bottom: 8px;}
-    .item-price { font-size: 18px; font-weight: 800; color: #059669;}
-    .add-btn { background: #10b981; color: white; border-radius: 6px; padding: 6px 16px; font-size: 14px; font-weight: bold; float: right; border: none; cursor: pointer;}
+    /* Grid & Cards */
+    .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-bottom: 80px;}
+    .job-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #e5e7eb;}
+    .job-title { font-size: 16px; font-weight: 700; color: #111827;}
+    .job-sal { color: #059669; font-weight: 700; font-size: 14px; margin: 5px 0;}
     
-    .fallback-box { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 12px; color: white; text-align: center; margin: 20px 0;}
+    .item-card { background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; position: relative;}
+    .item-img { width: 100%; height: 140px; object-fit: cover;}
+    .item-info { padding: 10px;}
+    .item-title { font-size: 14px; font-weight: 600; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+    .item-price { font-size: 16px; font-weight: 800; color: #111827; margin-top: 4px;}
+    .add-btn { background: #10b981; color: white; border-radius: 6px; padding: 4px 12px; font-size: 12px; font-weight: bold; float: right; border: none;}
     
-    #MainMenu, footer, header {visibility: hidden;}
+    /* Hide Streamlit default UI elements for app feel */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 4. APP HEADER & SEARCH LAYER
+# 3. APP HEADER
 # ==========================================
 st.markdown("""
 <div class="app-header">
@@ -142,124 +122,103 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<div class='search-container'>", unsafe_allow_html=True)
-search_query = st.text_input("🔍 Search 10,000+ Products, Jobs & Services...", placeholder="Try 'atta', 'tretar', 'palambar', 'job'...")
-st.markdown("</div>", unsafe_allow_html=True)
+search_query = st.text_input("🔍 Search 10,000+ Products, Jobs & Services...")
 
 # ==========================================
-# 5. DYNAMIC CONTENT RENDERING
+# 4. BOTTOM NAVIGATION TABS
 # ==========================================
-if search_query:
-    results = smart_search(search_query, df_catalog)
+tab_home, tab_grocery, tab_shops, tab_jobs, tab_profile = st.tabs(["🏠 Home", "🛒 Grocery", "🏪 Shops", "💼 Jobs", "👤 Profile"])
+
+with tab_home:
+    st.markdown("""
+    <div class="custom-order-box">
+        <h3>⚡ Custom Order</h3>
+        <p style="font-size: 13px; margin:0;">Can't find it? Just type or record what you need.</p>
+        <div class="voice-input-mock">
+            <span>e.g., 1kg fresh paneer...</span>
+            <span>🎤</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    if not results.empty:
-        st.success(f"🔍 Found {len(results)} results matching your search:")
-        
-        # Display top 10 results to keep mobile UI clean
-        display_results = results.head(10)
-        cols = st.columns(2)
-        for i, (_, row) in enumerate(display_results.iterrows()):
-            with cols[i % 2]:
-                st.markdown(f"""
-                <div class="item-card">
-                    <img src="{row['Image_URL']}" class="item-img">
-                    <div class="item-info">
-                        <div class="item-title">{row['Item_Name']}</div>
-                        <div class="item-cat">📍 {row['Location']} • {row['Category']}</div>
-                        <div class="item-price">₹{row['Price']} <button class="add-btn">Get</button></div>
-                    </div>
+    st.subheader("🔥 Popular Right Now")
+    home_items = df_catalog.sample(6)
+    
+    cols = st.columns(2)
+    for i, (_, row) in enumerate(home_items.iterrows()):
+        with cols[i % 2]:
+            st.markdown(f"""
+            <div class="item-card">
+                <img src="{row['Image_URL']}" class="item-img">
+                <div class="item-info">
+                    <div class="item-title">{row['Item_Name']}</div>
+                    <div class="item-price">₹{row['Price']} <button class="add-btn">ADD</button></div>
                 </div>
-                """, unsafe_allow_html=True)
-                
-    else:
-        # THE FALLBACK MECHANISM (Khali Kuchh V Nahi Rhe)
-        st.markdown("""
-        <div class="fallback-box">
-            <h3 style="color:white; margin-top:0;">🤖 We couldn't find an exact match</h3>
-            <p style="font-size:14px; margin-bottom:0;">But don't worry! Tap below to send this directly to local partners. They will arrange it for you.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.write("")
+
+with tab_grocery:
+    st.subheader("Groceries & Staples")
+    st.caption("Delivery in ~30 min from shops near Chatra")
+    
+    # Filter only Grocery
+    g_items = df_catalog[df_catalog['Category'] == 'Grocery & Staples'].head(10)
+    for _, row in g_items.iterrows():
+        st.markdown(f"""
+        <div style="background:white; padding:12px; border-radius:12px; margin-bottom:10px; display:flex; align-items:center; border: 1px solid #e5e7eb;">
+            <img src="{row['Image_URL']}" style="width:60px; height:60px; border-radius:8px; margin-right:15px;">
+            <div style="flex-grow: 1;">
+                <div style="font-weight:700; font-size:15px;">{row['Item_Name']}</div>
+                <div style="font-weight:800; font-size:16px; color:#111827;">₹{row['Price']}</div>
+            </div>
+            <button class="add-btn" style="padding: 8px 16px; font-size: 14px;">Add</button>
         </div>
         """, unsafe_allow_html=True)
-        
-        with st.expander("👉 Request Custom Order", expanded=True):
-            st.text_area("Your Requirement", value=search_query)
-            st.text_input("Phone Number")
-            st.button("Send Request to Local Partners 🚀", type="primary")
-            
-        st.write("---")
-        st.subheader("🔥 Popular in your area instead:")
-        
-        # Show random popular items so screen is never empty
-        home_items = df_catalog.sample(4)
-        cols = st.columns(2)
-        for i, (_, row) in enumerate(home_items.iterrows()):
-            with cols[i % 2]:
-                st.markdown(f"""
-                <div class="item-card">
-                    <img src="{row['Image_URL']}" class="item-img">
-                    <div class="item-info">
-                        <div class="item-title">{row['Item_Name']}</div>
-                        <div class="item-price">₹{row['Price']}</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
 
-else:
-    # DEFAULT HOME SCREEN (When search is empty)
-    tab_home, tab_grocery, tab_services, tab_jobs = st.tabs(["🏠 Home", "🛒 Grocery", "🔧 Services", "💼 Jobs"])
-
-    with tab_home:
-        st.subheader("Daily Deals & Essentials")
-        home_items = df_catalog[df_catalog['Category'] == 'Grocery & Staples'].sample(4)
-        cols = st.columns(2)
-        for i, (_, row) in enumerate(home_items.iterrows()):
-            with cols[i % 2]:
-                st.markdown(f"""
-                <div class="item-card">
-                    <img src="{row['Image_URL']}" class="item-img">
-                    <div class="item-info">
-                        <div class="item-title">{row['Item_Name']}</div>
-                        <div class="item-price">₹{row['Price']} <button class="add-btn">Add</button></div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-        st.write("---")
-        st.subheader("Top Local Services")
-        service_items = df_catalog[df_catalog['Category'] == 'Home Repairs & Maintenance'].sample(2)
-        for _, row in service_items.iterrows():
-            st.markdown(f"""
-            <div style="background:white; padding:15px; border-radius:12px; margin-bottom:15px; display:flex; align-items:center; border: 1px solid #e5e7eb;">
-                <img src="{row['Image_URL']}" style="width:70px; height:70px; border-radius:8px; margin-right:15px; object-fit: cover;">
-                <div style="flex-grow: 1;">
-                    <div style="font-weight:700; font-size:15px; color:#111827;">{row['Item_Name']}</div>
-                    <div style="font-size:13px; color:#6b7280;">📍 {row['Location']}</div>
-                    <div style="font-weight:800; font-size:16px; color:#059669; margin-top:5px;">₹{row['Price']}</div>
-                </div>
-                <button class="add-btn">Book</button>
+with tab_shops:
+    st.subheader("Local Shops Near You")
+    shops = ["Maa Sharda Sweets", "Verma Hardware", "Green Medicos", "Jai Maa Stationery", "Chatra General Store"]
+    for shop in shops:
+        rating = round(random.uniform(4.0, 4.9), 1)
+        dist = round(random.uniform(0.2, 3.5), 1)
+        st.markdown(f"""
+        <div class="job-card" style="display:flex; align-items:center;">
+            <div style="font-size:30px; background:#f3f4f6; padding:10px; border-radius:10px; margin-right:15px;">🏪</div>
+            <div>
+                <div class="job-title">{shop}</div>
+                <div style="font-size:13px; color:#6b7280;">⭐ {rating} • 📍 {dist} km away</div>
             </div>
-            """, unsafe_allow_html=True)
+        </div>
+        """, unsafe_allow_html=True)
 
-    with tab_grocery:
-        st.subheader("Fresh Produce & Grocery")
-        g_items = df_catalog[df_catalog['Category'].isin(['Grocery & Staples', 'Fresh Produce & Dairy'])].sample(10)
-        for _, row in g_items.iterrows():
-            st.markdown(f"**{row['Item_Name']}** - ₹{row['Price']} (📍 {row['Location']})")
+with tab_jobs:
+    st.subheader("Local Jobs (Work near home)")
+    st.caption("Connecting Chatra businesses with local talent.")
+    
+    jobs_df = df_catalog[df_catalog['Category'] == 'Local Jobs'].head(5)
+    for _, row in jobs_df.iterrows():
+        st.markdown(f"""
+        <div class="job-card">
+            <div style="float:right; background:#fef3c7; color:#d97706; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold;">Full-time</div>
+            <div class="job-title">{row['Item_Name']}</div>
+            <div style="font-size:13px; color:#6b7280; margin: 4px 0;">🏢 KuchhV Verified Partner</div>
+            <div class="job-sal">₹{row['Price']}/mo  <span style="color:#6b7280; font-weight:normal; font-size:12px;">📍 Chatra</span></div>
+            <button style="width:100%; background:#10b981; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; margin-top:10px;">Apply now</button>
+        </div>
+        """, unsafe_allow_html=True)
 
-    with tab_services:
-        st.subheader("Hire Professionals")
-        s_items = df_catalog[df_catalog['Category'].isin(['Home Repairs & Maintenance', 'Freelance & IT Services', 'Heavy Machinery & Transport'])].sample(10)
-        for _, row in s_items.iterrows():
-            st.markdown(f"**{row['Item_Name']}** - ₹{row['Price']} (📍 {row['Location']})")
-
-    with tab_jobs:
-        st.subheader("Local Job Openings")
-        jobs_df = df_catalog[df_catalog['Category'] == 'Local Jobs & Hiring'].sample(5)
-        for _, row in jobs_df.iterrows():
-            st.markdown(f"""
-            <div style="background:white; padding:15px; border-radius:12px; margin-bottom:15px; border: 1px solid #e5e7eb;">
-                <div style="float:right; background:#dcfce7; color:#059669; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold;">Hiring</div>
-                <div style="font-size: 16px; font-weight: 700; color: #111827;">{row['Item_Name']}</div>
-                <div style="color: #059669; font-weight: 700; font-size: 14px; margin: 5px 0;">₹{row['Price']}/mo</div>
-                <div style="font-size:13px; color:#6b7280;">📍 {row['Location']}</div>
-            </div>
-            """, unsafe_allow_html=True)
+with tab_profile:
+    st.markdown("""
+    <div style="background:#10b981; color:white; padding:20px; border-radius:16px; margin-top:10px;">
+        <h2 style="color:white; margin:0;">Aarti Kumari</h2>
+        <p style="margin:5px 0;">📞 +91 98xxx xxx21</p>
+        <p style="margin:0; font-size:14px;">📍 Ward 4, Main Road, Chatra</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.write("---")
+    st.markdown("#### 📦 My orders & bookings")
+    st.markdown("#### 📍 Saved addresses")
+    st.markdown("#### ❤️ Favourites")
+    st.markdown("#### 🎧 Help & support")
