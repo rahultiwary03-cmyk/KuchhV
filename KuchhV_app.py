@@ -2,32 +2,27 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-import random
 
 # ==========================================
-# 1. SETUP & MASSIVE INDIAN MARKET DATABASE
+# 1. SETUP & DATABASE
 # ==========================================
-st.set_page_config(page_title="KuchhV | Har Zarurat, Ek Platform", layout="wide", page_icon="🛍️")
+st.set_page_config(page_title="KuchhV | Har Zarurat, Ek Platform", layout="wide", page_icon="🚀")
 
-REQUIREMENTS_FILE = "req_v3.csv"
-PARTNERS_FILE = "partners_v3.csv"
-ORDERS_FILE = "orders_v3.csv"
+REQUIREMENTS_FILE = "req_v4.csv"
+PARTNERS_FILE = "partners_v4.csv"
+ORDERS_FILE = "orders_v4.csv"
 
-# Comprehensive Indian Service & Product List for Autocomplete
 INDIAN_SERVICES = [
     "Grocery & Daily Needs", "Fresh Vegetables & Fruits", "Dairy & Milk Delivery", 
     "Plumber", "Electrician", "Carpenter", "AC Repair & Servicing", 
-    "RO Water Purifier Repair", "Home Deep Cleaning", "Pest Control",
-    "IT Freelancer (Python/Excel)", "Web Developer", "Graphic Designer", "Video Editor",
-    "Tractor Rental", "JCB & Crane Rental", "Mini Truck (Tata Ace) Booking", "Bike Taxi", "Car Rental (Self Drive)",
-    "CA & GST Filing (Pragya Kendra)", "Lawyer & Notary", "Real Estate (Rent/Buy)", "PG & Hostel Booking",
+    "IT Freelancer (Python/Excel)", "Web Developer", "Graphic Designer",
+    "Tractor Rental", "JCB & Crane Rental", "Mini Truck (Tata Ace) Booking", "Bike Taxi",
+    "CA & GST Filing (Pragya Kendra)", "Lawyer & Notary", "Real Estate (Rent/Buy)",
     "Doctor Appointment", "Medicine Delivery", "Lab Test at Home",
-    "Men's Salon", "Women's Parlour", "Bridal Makeup", "Mehndi Artist",
-    "Tent House & Decorator", "Caterers (Halwai)", "Pandit Ji for Puja",
-    "Labour Contractor (Daily Wage)", "Rajmistri (Mason)"
+    "Men's Salon", "Women's Parlour", "Bridal Makeup", 
+    "Tent House & Decorator", "Caterers (Halwai)", "Labour Contractor (Daily Wage)"
 ]
 
-# Create Data Files
 for file, cols in [
     (REQUIREMENTS_FILE, ["Timestamp", "Phone", "Category", "Requirement", "Location", "Status"]),
     (PARTNERS_FILE, ["Phone", "Password", "Business_Name", "Category", "Verification_Status", "Base_Price"]),
@@ -43,16 +38,20 @@ def save_data(file_name, new_data):
     df = pd.DataFrame([new_data])
     df.to_csv(file_name, mode='a', header=False, index=False)
 
+def overwrite_data(file_name, df):
+    df.to_csv(file_name, index=False)
+
 # Professional Colorful CSS
 st.markdown("""
     <style>
-    .stApp { background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    [data-testid="stSidebar"] { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); }
-    [data-testid="stSidebar"] * { color: #f8fafc !important; }
-    .search-box { font-size: 20px; font-weight: bold; }
-    .price-card { background: white; padding: 20px; border-radius: 12px; border-left: 5px solid #10b981; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px;}
-    .fee-text { color: #ef4444; font-size: 14px; font-weight: bold;}
-    .earning-text { color: #10b981; font-size: 14px; font-weight: bold;}
+    .stApp { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    [data-testid="stSidebar"] { background: linear-gradient(180deg, #1e3c72 0%, #2a5298 100%); }
+    [data-testid="stSidebar"] * { color: #ffffff !important; }
+    .support-box { background-color: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid rgba(255,255,255,0.3); }
+    .price-card { background: white; padding: 20px; border-radius: 12px; border-left: 5px solid #2563eb; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px;}
+    .fee-text { color: #dc2626; font-size: 14px; font-weight: 600;}
+    .earning-text { color: #059669; font-size: 15px; font-weight: 700;}
+    h1, h2, h3 { color: #0f172a; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -60,22 +59,31 @@ if 'logged_in_partner' not in st.session_state:
     st.session_state['logged_in_partner'] = None
 
 # ==========================================
-# 2. APP NAVIGATION
+# 2. APP NAVIGATION & 24/7 SUPPORT
 # ==========================================
 st.sidebar.title("📱 KuchhV Super App")
+st.sidebar.caption("Har Zarurat, Ek Platform.")
 st.sidebar.write("---")
 app_mode = st.sidebar.radio("Main Menu:", ["🏠 Customer Marketplace", "📢 Requirement Hub", "💼 Partner Portal", "⚙️ Admin Center"])
 st.sidebar.write("---")
-st.sidebar.caption("Platform Fee: 1% Only")
+
+# 24/7 Customer Support Module
+st.sidebar.markdown("""
+<div class='support-box'>
+    <h3 style='color: white; margin-bottom: 5px;'>🎧 24/7 Customer Support</h3>
+    <p style='font-size: 13px; margin-bottom: 5px;'>Need help with booking or verification?</p>
+    <p style='margin: 0; font-weight: bold;'>📞 8521413089</p>
+    <p style='margin: 0; font-size: 12px;'>✉️ Rahultiwary03@gmail.com</p>
+</div>
+""", unsafe_allow_html=True)
 
 # ==========================================
-# 3. CUSTOMER MARKETPLACE (Search, Compare & Book)
+# 3. CUSTOMER MARKETPLACE
 # ==========================================
 if app_mode == "🏠 Customer Marketplace":
     st.title("🛍️ KuchhV Marketplace")
     st.markdown("### Search anything. Compare prices. Book the lowest.")
     
-    # Universal Search Bar with Autocomplete
     selected_service = st.selectbox("🔍 What do you need today?", ["-- Select or Type Here --"] + INDIAN_SERVICES)
     
     if selected_service != "-- Select or Type Here --":
@@ -86,30 +94,29 @@ if app_mode == "🏠 Customer Marketplace":
         available = partner_df[(partner_df['Category'] == selected_service) & (partner_df['Verification_Status'] == 'Verified ✅')].copy()
         
         if not available.empty:
-            # Convert Base_Price to numeric for sorting, handling any non-numeric gracefully
             available['Base_Price'] = pd.to_numeric(available['Base_Price'], errors='coerce').fillna(999)
-            available = available.sort_values(by='Base_Price') # Lowest price first
+            available = available.sort_values(by='Base_Price')
             
             st.success(f"✅ Found {len(available)} verified partner(s). Showing lowest prices first.")
             
             for index, row in available.iterrows():
                 partner_name = row['Business_Name']
                 price = float(row['Base_Price'])
-                platform_fee = price * 0.01  # 1% logic
+                platform_fee = price * 0.01 
                 partner_earning = price - platform_fee
                 
                 st.markdown(f"""
                 <div class='price-card'>
-                    <h3>🏪 {partner_name}</h3>
-                    <p style='font-size: 20px; font-weight: bold; color: #1e293b;'>Price: ₹{price:,.2f}</p>
-                    <p class='fee-text'>KuchhV Platform Fee (1%): ₹{platform_fee:,.2f}</p>
-                    <p class='earning-text'>Partner Earns: ₹{partner_earning:,.2f}</p>
+                    <h3 style='margin-top:0;'>🏪 {partner_name}</h3>
+                    <p style='font-size: 22px; font-weight: 800; color: #1e293b; margin: 5px 0;'>Price: ₹{price:,.2f}</p>
+                    <p class='fee-text' style='margin:0;'>KuchhV Platform Fee (1%): ₹{platform_fee:,.2f}</p>
+                    <p class='earning-text' style='margin:0;'>Partner Earns: ₹{partner_earning:,.2f}</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
                 with st.expander(f"Book {partner_name} Now"):
                     with st.form(f"book_{index}"):
-                        cust_phone = st.text_input("Your Mobile Number (e.g., for Chatra location)")
+                        cust_phone = st.text_input("Your Mobile Number:")
                         if st.form_submit_button("Confirm Booking"):
                             if cust_phone:
                                 save_data(ORDERS_FILE, {
@@ -122,38 +129,41 @@ if app_mode == "🏠 Customer Marketplace":
                                 st.error("Please enter your mobile number.")
         else:
             st.warning("No verified partners found for this service right now.")
-            st.info("💡 Post this in the **Requirement Hub** (from the left menu) and partners will contact you!")
+            st.info("💡 Post this in the Requirement Hub and local partners will bid for your request!")
 
 # ==========================================
 # 4. REQUIREMENT HUB
 # ==========================================
 elif app_mode == "📢 Requirement Hub":
     st.title("📢 Custom Requirement Hub")
-    st.write("Need bulk materials, a large workforce, or custom software? Post it here.")
+    st.write("Need bulk materials, a large workforce, or custom services? Post it here.")
     
-    with st.form("req_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            req_cat = st.selectbox("Category", INDIAN_SERVICES)
-            loc = st.text_input("Pincode / City")
-        with col2:
-            phone = st.text_input("Mobile Number")
-        
-        desc = st.text_area("Detail your exact need:")
-        
-        if st.form_submit_button("Broadcast to Partners 🚀"):
-            if phone and desc and loc:
-                save_data(REQUIREMENTS_FILE, {
-                    "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "Phone": phone, "Category": req_cat, "Requirement": desc, "Location": loc, "Status": "Open"
-                })
-                st.success("✅ Broadcasted! Partners will bid on your requirement.")
-                st.balloons()
-            else:
-                st.error("Please fill all details.")
+    with st.container():
+        st.markdown("<div style='background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);'>", unsafe_allow_html=True)
+        with st.form("req_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                req_cat = st.selectbox("Category", INDIAN_SERVICES)
+                loc = st.text_input("Pincode / City")
+            with col2:
+                phone = st.text_input("Mobile Number")
+            
+            desc = st.text_area("Detail your exact need:")
+            
+            if st.form_submit_button("Broadcast to Partners 🚀"):
+                if phone and desc and loc:
+                    save_data(REQUIREMENTS_FILE, {
+                        "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Phone": phone, "Category": req_cat, "Requirement": desc, "Location": loc, "Status": "Open"
+                    })
+                    st.success("✅ Broadcasted! Partners will bid on your requirement.")
+                    st.balloons()
+                else:
+                    st.error("Please fill all details.")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
-# 5. PARTNER PORTAL (Registration & Dashboard)
+# 5. PARTNER PORTAL
 # ==========================================
 elif app_mode == "💼 Partner Portal":
     st.title("💼 Partner Business Portal")
@@ -163,7 +173,7 @@ elif app_mode == "💼 Partner Portal":
         
         with t2:
             st.subheader("Join KuchhV & Grow Your Business")
-            st.markdown("*Platform charges only 1% fee on your total billing.*")
+            st.info("KuchhV Platform charges only 1% fee on your total billing.")
             with st.form("reg_form"):
                 biz_name = st.text_input("Business / Freelancer Name")
                 phone = st.text_input("Mobile Number")
@@ -213,37 +223,34 @@ elif app_mode == "💼 Partner Portal":
         st.dataframe(my_orders, use_container_width=True)
 
 # ==========================================
-# 6. ADMIN CENTER (1-Click Approval Fix)
+# 6. SUPER ADMIN CENTER (Full Database Control)
 # ==========================================
 elif app_mode == "⚙️ Admin Center":
     st.title("⚙️ Super Admin Control Room")
+    st.write("Complete Database Management System (View, Add, Edit, Delete Records)")
     
-    pdf = load_data(PARTNERS_FILE)
+    t_partners, t_orders, t_reqs = st.tabs(["👥 Manage Partners", "🛒 Manage Orders", "📢 Manage Requirements"])
     
-    st.subheader("Action Required: Pending Approvals")
-    pending = pdf[pdf['Verification_Status'] == 'Pending']
-    
-    if not pending.empty:
-        for idx, row in pending.iterrows():
-            with st.container():
-                st.markdown(f"**{row['Business_Name']}** | {row['Category']} | 📞 {row['Phone']}")
-                col1, col2, col3 = st.columns([1, 1, 8])
-                with col1:
-                    if st.button("Approve ✅", key=f"app_{idx}"):
-                        pdf.at[idx, 'Verification_Status'] = 'Verified ✅'
-                        pdf.to_csv(PARTNERS_FILE, index=False)
-                        st.success(f"{row['Business_Name']} Approved!")
-                        st.rerun()
-                with col2:
-                    if st.button("Reject ❌", key=f"rej_{idx}"):
-                        pdf.at[idx, 'Verification_Status'] = 'Rejected ❌'
-                        pdf.to_csv(PARTNERS_FILE, index=False)
-                        st.error(f"{row['Business_Name']} Rejected!")
-                        st.rerun()
-                st.write("---")
-    else:
-        st.info("No pending approvals.")
-        
-    st.subheader("All Verified Partners")
-    verified = pdf[pdf['Verification_Status'] == 'Verified ✅'].drop(columns=['Password'])
-    st.dataframe(verified, use_container_width=True)
+    with t_partners:
+        st.subheader("Partner Database (Add/Modify/Delete)")
+        pdf = load_data(PARTNERS_FILE)
+        edited_pdf = st.data_editor(pdf, num_rows="dynamic", use_container_width=True, key="edit_partners")
+        if st.button("💾 Save Partner Changes"):
+            overwrite_data(PARTNERS_FILE, edited_pdf)
+            st.success("Partner database updated successfully!")
+            
+    with t_orders:
+        st.subheader("Orders Database (Add/Modify/Delete)")
+        odf = load_data(ORDERS_FILE)
+        edited_odf = st.data_editor(odf, num_rows="dynamic", use_container_width=True, key="edit_orders")
+        if st.button("💾 Save Order Changes"):
+            overwrite_data(ORDERS_FILE, edited_odf)
+            st.success("Orders database updated successfully!")
+
+    with t_reqs:
+        st.subheader("Requirement Hub Database (Add/Modify/Delete)")
+        rdf = load_data(REQUIREMENTS_FILE)
+        edited_rdf = st.data_editor(rdf, num_rows="dynamic", use_container_width=True, key="edit_reqs")
+        if st.button("💾 Save Requirement Changes"):
+            overwrite_data(REQUIREMENTS_FILE, edited_rdf)
+            st.success("Requirements database updated successfully!")
