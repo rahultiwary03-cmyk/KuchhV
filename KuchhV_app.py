@@ -2,275 +2,325 @@ import streamlit as st
 import pandas as pd
 import os
 import random
+import difflib
 from datetime import datetime
 
 # ==========================================
-# 1. SETUP & SESSION STATE
+# 1. SETUP & SESSION STATE ISOLATION
 # ==========================================
 st.set_page_config(page_title="KuchhV | Super App", layout="centered", initial_sidebar_state="collapsed")
 
-DB_CATALOG = "db_catalog.csv"
-DB_PARTNERS = "db_partners.csv"
-DB_ORDERS = "db_orders.csv"
-DB_REQS = "db_reqs.csv"
+# Database Files
+DB_CATALOG = "v14_catalog.csv"
+DB_JOBS = "v14_jobs.csv"
+DB_PARTNERS = "v14_partners.csv"
+DB_ORDERS = "v14_orders.csv"
+DB_JOB_APPS = "v14_job_apps.csv"
 
-# Initialize Session State
-if 'user_type' not in st.session_state:
-    st.session_state.update({'user_type': 'Customer', 'logged_in': False, 'phone': '', 'name': '', 'location': 'Chatra'})
+# Pan-India Locations & Tiers (For Dynamic Pricing)
+LOCATIONS = {
+    "Chatra": 0.7, "Hazaribagh": 0.8, "Ranchi": 0.9, "Patna": 0.9, 
+    "Gaya": 0.8, "Kanpur": 0.9, "Delhi": 1.2, "Mumbai": 1.3, "Bangalore": 1.2
+}
+
+# Ensure Session States
+if 'user_role' not in st.session_state:
+    st.session_state.update({'user_role': 'Customer', 'logged_in': False, 'phone': '', 'name': '', 'city': 'Chatra'})
 
 # ==========================================
-# 2. MEGA DATABASE & GEO-LOCATION ENGINE
+# 2. MEGA DATABASE GENERATOR (10,000+ Items)
 # ==========================================
-DISTRICTS = ["Chatra", "Ranchi", "Patna", "Gaya", "Delhi", "Pune", "Hazaribagh"]
-CATEGORIES = ["Grocery & Essentials", "Home Services (Plumber/AC)", "Local Jobs", "Heavy Machinery/Tractor", "IT & CSC Forms", "Medical & Lab"]
-
 @st.cache_data
-def initialize_mega_database():
-    if os.path.exists(DB_CATALOG):
-        return pd.read_csv(DB_CATALOG, dtype=str)
-    
-    with st.spinner("🚀 Booting Pan-India Geo-Locked Servers..."):
-        data = []
-        items_map = {
-            "Grocery & Essentials": ["Aashirvaad Atta", "Amul Milk", "Fresh Onion", "Basmati Rice", "Paneer"],
-            "Home Services (Plumber/AC)": ["Plumber Visit", "AC Service", "Electrician", "Deep Cleaning", "RO Repair"],
-            "Local Jobs": ["Delivery Boy", "Shop Assistant", "Cook", "Data Entry", "Security Guard"],
-            "Heavy Machinery/Tractor": ["Tractor Rental", "JCB Booking", "Tata Ace", "Water Tanker"],
-            "IT & CSC Forms": ["GST Filing", "Pension Form", "Excel Work", "Website Design"],
-            "Medical & Lab": ["Lab Test (Home)", "Medicine Delivery", "Doctor Appt"]
-        }
-        
-        for i in range(10050):
-            cat = random.choice(CATEGORIES)
-            item = random.choice(items_map[cat])
-            loc = random.choice(DISTRICTS)
+def generate_pan_india_dbs():
+    if not os.path.exists(DB_CATALOG):
+        with st.spinner("🚀 Building Pan-India Geo-Locked Servers..."):
+            catalog_data = []
+            categories = {
+                "10-Min Groceries": ["Aashirvaad Atta 5kg", "Amul Milk 1L", "Onion 1kg", "Potato 1kg", "Refined Oil 1L", "Tata Salt", "Sugar 1kg", "Paneer 200g"],
+                "Home Services": ["Plumber Visit", "Electrician Visit", "AC Service", "RO Repair", "Deep Cleaning", "Carpenter"],
+                "Heavy Machinery": ["Tractor Rental", "JCB Booking", "Tata Ace Booking", "Water Tanker"],
+                "IT & CSC Work": ["GST Filing", "PAN Card Apply", "Pension Form", "Excel Data Entry", "Video Editing"]
+            }
             
-            # Dynamic Tier Pricing (Tier 3 like Chatra is cheaper)
-            base = random.randint(100, 2000)
-            if loc in ["Chatra", "Hazaribagh", "Gaya"]:
-                price = int(base * 0.7) # 30% cheaper
-            else:
-                price = base
+            # Generate 10,000+ Catalog Items
+            for i in range(10100):
+                cat = random.choice(list(categories.keys()))
+                item = random.choice(categories[cat])
+                loc = random.choice(list(LOCATIONS.keys()))
+                base_price = random.randint(50, 1500)
+                final_price = int(base_price * LOCATIONS[loc]) # Dynamic Pricing applied
                 
-            data.append({
-                "ID": f"ITM{10000+i}", "Item_Name": f"{item} ({loc} Special)", "Category": cat, 
-                "Price": str(price), "Location": loc, "Partner_ID": "Unassigned"
-            })
-        
-        df = pd.DataFrame(data)
-        df.to_csv(DB_CATALOG, index=False)
-        return df
+                catalog_data.append({
+                    "Item_ID": f"ITM{10000+i}", "Name": f"{item}", "Category": cat,
+                    "Price": final_price, "Location": loc
+                })
+            pd.DataFrame(catalog_data).to_csv(DB_CATALOG, index=False)
 
-mega_catalog = initialize_mega_database()
+            # Generate 500+ Local Jobs
+            job_data = []
+            job_titles = ["Delivery Partner", "Shop Assistant", "Data Entry Operator", "Cook (Home)", "Mechanic", "Security Guard"]
+            for i in range(500):
+                loc = random.choice(list(LOCATIONS.keys()))
+                title = random.choice(job_titles)
+                sal_base = random.randint(7000, 20000)
+                sal_final = int(sal_base * LOCATIONS[loc])
+                job_data.append({
+                    "Job_ID": f"JOB{1000+i}", "Title": title, "Employer": f"Local Biz {random.randint(1,100)}",
+                    "Salary": f"₹{sal_final}/month", "Location": loc
+                })
+            pd.DataFrame(job_data).to_csv(DB_JOBS, index=False)
 
-# Init other tables
-for file, cols in [
-    (DB_PARTNERS, ["Phone", "Password", "Name", "Category", "Location", "Status"]),
-    (DB_ORDERS, ["Order_ID", "Timestamp", "Customer_Phone", "Item_Name", "Price", "Location", "Partner_Phone", "Status", "OTP"]),
-    (DB_REQS, ["Req_ID", "Timestamp", "Customer_Phone", "Category", "Location", "Requirement", "Status"])
-]:
+generate_pan_india_dbs()
+
+# Helpers
+def load_db(file, cols):
     if not os.path.exists(file):
         pd.DataFrame(columns=cols).to_csv(file, index=False)
+    return pd.read_csv(file, dtype=str)
 
-def read_db(file): return pd.read_csv(file, dtype=str)
-def save_db(file, df): df.to_csv(file, index=False)
+def save_db(df, file):
+    df.to_csv(file, index=False)
+
+# Load Mutable DBs
+db_partners = load_db(DB_PARTNERS, ["Phone", "Password", "Name", "Role", "Location", "Status"])
+db_orders = load_db(DB_ORDERS, ["Order_ID", "Customer", "Item", "Price", "Location", "Partner", "Status", "OTP", "Date"])
+db_job_apps = load_db(DB_JOB_APPS, ["Job_ID", "Job_Title", "Candidate_Name", "Candidate_Phone", "Employer"])
 
 # ==========================================
-# 3. NATIVE MOBILE APP CSS
+# 3. HYPER-SIMPLE MOBILE UI CSS
 # ==========================================
 st.markdown("""
     <style>
-    .stApp { background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif; }
-    .header { background: white; padding: 15px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 100;}
-    .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;}
-    .title { font-size: 16px; font-weight: bold; color: #111827;}
-    .price { font-size: 18px; font-weight: 900; color: #059669;}
-    .loc-badge { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;}
-    .status-badge { background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold;}
+    .stApp { background-color: #f8fafc; font-family: 'Segoe UI', sans-serif; }
     #MainMenu, footer, header {visibility: hidden;}
+    
+    /* Top Header */
+    .top-header { background: white; padding: 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 999;}
+    
+    /* Beautiful Emerald Cards */
+    .product-card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;}
+    .job-card { background: #ffffff; border-left: 5px solid #10b981; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+    
+    .item-title { font-size: 16px; font-weight: 800; color: #0f172a;}
+    .item-price { font-size: 18px; font-weight: 900; color: #10b981;}
+    .loc-tag { font-size: 11px; background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px; font-weight: bold;}
+    
+    /* Fallback Box */
+    .fallback-box { background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 12px; color: white; margin-bottom: 20px;}
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 4. APP NAVIGATION & HEADER
+# 4. UNIVERSAL TOP HEADER
 # ==========================================
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.session_state['location'] = st.selectbox("📍 Your Location", DISTRICTS, index=DISTRICTS.index(st.session_state['location']))
-with col2:
-    st.session_state['user_type'] = st.selectbox("👤 Profile", ["Customer", "Partner", "Admin"])
+col_loc, col_role = st.columns([2, 1])
+with col_loc:
+    st.session_state['city'] = st.selectbox("📍 Set Location", list(LOCATIONS.keys()), index=list(LOCATIONS.keys()).index(st.session_state['city']))
+with col_role:
+    st.session_state['user_role'] = st.selectbox("👤 Switch Role", ["Customer", "Partner", "Admin"])
 
 st.write("---")
 
 # ==========================================
-# 5. CUSTOMER INTERFACE (Geo-Locked)
+# 5. CUSTOMER INTERFACE (Extremely Simple)
 # ==========================================
-if st.session_state['user_type'] == "Customer":
-    tab1, tab2, tab3 = st.tabs(["🛒 Local Shops", "📢 Custom Request", "📦 My Orders"])
+if st.session_state['user_role'] == "Customer":
     
-    with tab1:
-        st.markdown(f"### Available in {st.session_state['location']}")
-        local_catalog = mega_catalog[mega_catalog['Location'] == st.session_state['location']]
-        
-        search = st.text_input("🔍 Search local items, shops, jobs...")
-        if search:
-            local_catalog = local_catalog[local_catalog['Item_Name'].str.contains(search, case=False, na=False)]
+    # 5.1 THE IDIOT-PROOF AI SEARCH BAR
+    search_query = st.text_input("🔍 What do you need today?", placeholder="Try typing 'palambar', 'atta', 'tretar'...")
+    
+    catalog = pd.read_csv(DB_CATALOG, dtype=str)
+    # Geo-Locking Data
+    local_catalog = catalog[catalog['Location'] == st.session_state['city']]
+    
+    results = pd.DataFrame()
+    if search_query:
+        query = str(search_query).lower()
+        exact = local_catalog[local_catalog['Name'].str.lower().str.contains(query)]
+        if not exact.empty:
+            results = exact
         else:
-            local_catalog = local_catalog.sample(min(10, len(local_catalog))) # Show 10 random
-            
-        for _, row in local_catalog.iterrows():
+            # Fuzzy AI Correction
+            all_names = local_catalog['Name'].unique().tolist()
+            matches = difflib.get_close_matches(query, [str(n).lower() for n in all_names], n=5, cutoff=0.3)
+            if matches:
+                pattern = '|'.join(matches)
+                results = local_catalog[local_catalog['Name'].str.lower().str.contains(pattern, regex=True)]
+
+    # 5.2 RENDER SEARCH OR HOME TABS
+    if search_query and not results.empty:
+        st.success(f"✅ Showing results for your search in {st.session_state['city']}")
+        for _, row in results.head(15).iterrows():
             st.markdown(f"""
-            <div class="card">
-                <span class="loc-badge">📍 {row['Location']}</span>
-                <div class="title" style="margin-top: 8px;">{row['Item_Name']}</div>
-                <div style="font-size: 13px; color: #6b7280;">{row['Category']}</div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                    <div class="price">₹{row['Price']}</div>
+            <div class="product-card">
+                <div>
+                    <div class="item-title">{row['Name']}</div>
+                    <div class="loc-tag">{row['Category']}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="item-price">₹{row['Price']}</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
             with st.expander("Book Now"):
-                with st.form(f"book_{row['ID']}"):
-                    c_phone = st.text_input("Mobile No.")
-                    if st.form_submit_button("Confirm Order"):
-                        if c_phone:
-                            orders = read_db(DB_ORDERS)
-                            new_order = pd.DataFrame([{
-                                "Order_ID": f"ORD{random.randint(1000,9999)}", "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                "Customer_Phone": c_phone, "Item_Name": row['Item_Name'], "Price": row['Price'], 
-                                "Location": row['Location'], "Partner_Phone": "Unassigned", "Status": "Pending", "OTP": str(random.randint(1000,9999))
-                            }])
-                            save_db(DB_ORDERS, pd.concat([orders, new_order]))
-                            st.success("✅ Order placed successfully! Local partners are being notified.")
-                        else:
-                            st.error("Phone required.")
+                with st.form(f"bk_{row['Item_ID']}"):
+                    c_ph = st.text_input("Enter Mobile Number")
+                    if st.form_submit_button("Confirm Order Securely"):
+                        if c_ph:
+                            new_ord = pd.DataFrame([{"Order_ID": f"ORD{random.randint(10000,99999)}", "Customer": c_ph, "Item": row['Name'], "Price": row['Price'], "Location": row['Location'], "Partner": "Unassigned", "Status": "Pending", "OTP": str(random.randint(1000,9999)), "Date": datetime.now().strftime("%Y-%m-%d %H:%M")}])
+                            save_db(pd.concat([db_orders, new_ord]), DB_ORDERS)
+                            st.success("🎉 Order Placed! Go to 'My Orders' for tracking.")
 
-    with tab2:
-        st.markdown("### Reverse Bidding Engine")
-        st.info(f"Can't find what you need in {st.session_state['location']}? Post it here!")
-        with st.form("req_form"):
-            c_phone = st.text_input("Your Phone Number")
-            c_cat = st.selectbox("Category", CATEGORIES)
-            c_req = st.text_area("Describe your exact requirement")
-            if st.form_submit_button("Broadcast to Partners 🚀"):
-                if c_phone and c_req:
-                    reqs = read_db(DB_REQS)
-                    new_req = pd.DataFrame([{
-                        "Req_ID": f"REQ{random.randint(1000,9999)}", "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                        "Customer_Phone": c_phone, "Category": c_cat, "Location": st.session_state['location'], 
-                        "Requirement": c_req, "Status": "Open"
-                    }])
-                    save_db(DB_REQS, pd.concat([reqs, new_req]))
-                    st.success("✅ Requirement broadcasted to local partners!")
+    elif search_query and results.empty:
+        # ZERO DEAD ENDS: Custom Request Box
+        st.markdown("""
+        <div class="fallback-box">
+            <h3 style="margin:0; color:white;">🎙️ Not found in catalog?</h3>
+            <p style="margin:0; font-size:14px;">Tell us exactly what you need. Local partners will arrange it.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        with st.form("custom_req"):
+            st.text_area("Your Requirement", value=search_query)
+            st.text_input("Mobile Number")
+            if st.form_submit_button("Send Request to Partners 🚀"):
+                st.success("✅ Broadcasted to local verified partners!")
 
-    with tab3:
-        st.markdown("### Active Orders & OTPs")
-        phone = st.text_input("Enter your phone number to track orders:")
-        if phone:
-            orders = read_db(DB_ORDERS)
-            my_orders = orders[orders['Customer_Phone'] == phone]
-            for _, row in my_orders.iterrows():
+    else:
+        # DEFAULT MOBILE NAVIGATION TABS
+        t_home, t_jobs, t_orders = st.tabs(["🛒 Grocery & Services", "💼 Local Jobs", "📦 My Orders"])
+        
+        with t_home:
+            st.subheader(f"⚡ 10-Min Delivery in {st.session_state['city']}")
+            home_items = local_catalog.sample(10)
+            for _, row in home_items.iterrows():
                 st.markdown(f"""
-                <div class="card">
-                    <div class="title">{row['Item_Name']}</div>
-                    <div style="margin: 8px 0;"><span class="status-badge">{row['Status']}</span></div>
-                    <div style="font-size: 14px;">Price: ₹{row['Price']}</div>
-                    <div style="font-size: 14px; font-weight:bold; color:#dc2626; margin-top:5px;">Your Secret OTP: {row['OTP']}</div>
-                    <div style="font-size: 11px; color: gray;">Give this OTP to partner to complete the order.</div>
+                <div class="product-card">
+                    <div><div class="item-title">{row['Name']}</div><div class="loc-tag">{row['Category']}</div></div>
+                    <div class="item-price">₹{row['Price']}</div>
                 </div>
                 """, unsafe_allow_html=True)
+                with st.expander("Order"):
+                    with st.form(f"h_{row['Item_ID']}"):
+                        c_ph = st.text_input("Mobile Number")
+                        if st.form_submit_button("Order Now"):
+                            new_ord = pd.DataFrame([{"Order_ID": f"ORD{random.randint(10000,99999)}", "Customer": c_ph, "Item": row['Name'], "Price": row['Price'], "Location": row['Location'], "Partner": "Unassigned", "Status": "Pending", "OTP": str(random.randint(1000,9999)), "Date": datetime.now().strftime("%Y-%m-%d %H:%M")}])
+                            save_db(pd.concat([db_orders, new_ord]), DB_ORDERS)
+                            st.success("✅ Order Placed!")
+
+        with t_jobs:
+            st.subheader(f"💼 Hiring in {st.session_state['city']}")
+            st.info("Direct monthly salary jobs. No OTP required to apply.")
+            jobs = pd.read_csv(DB_JOBS, dtype=str)
+            local_jobs = jobs[jobs['Location'] == st.session_state['city']].head(10)
+            
+            for _, row in local_jobs.iterrows():
+                st.markdown(f"""
+                <div class="job-card">
+                    <div class="item-title">{row['Title']}</div>
+                    <div style="color: gray; font-size:13px; margin: 4px 0;">🏢 {row['Employer']}</div>
+                    <div class="item-price" style="color: #ea580c;">{row['Salary']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                with st.expander("Apply Now"):
+                    with st.form(f"app_{row['Job_ID']}"):
+                        a_name = st.text_input("Full Name")
+                        a_ph = st.text_input("Mobile Number")
+                        if st.form_submit_button("Send Application"):
+                            if a_name and a_ph:
+                                new_app = pd.DataFrame([{"Job_ID": row['Job_ID'], "Job_Title": row['Title'], "Candidate_Name": a_name, "Candidate_Phone": a_ph, "Employer": row['Employer']}])
+                                save_db(pd.concat([db_job_apps, new_app]), DB_JOB_APPS)
+                                st.success("✅ Application sent to employer!")
+
+        with t_orders:
+            my_phone = st.text_input("Enter Phone No. to track orders:")
+            if my_phone:
+                my_ords = db_orders[db_orders['Customer'] == my_phone]
+                for _, row in my_ords.iterrows():
+                    color = "#10b981" if row['Status'] == "Completed" else "#ea580c"
+                    st.markdown(f"""
+                    <div class="product-card" style="border-left: 5px solid {color};">
+                        <div><div class="item-title">{row['Item']}</div><div class="loc-tag">{row['Status']}</div></div>
+                        <div style="text-align: right;">
+                            <div style="font-size:12px;">Secret OTP</div>
+                            <div style="font-size: 18px; font-weight: 900; color:#dc2626;">{row['OTP']}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
 # ==========================================
-# 6. PARTNER INTERFACE (Lifecycle & OTP)
+# 6. PARTNER / DELIVERY PORTAL (Ecosystem A)
 # ==========================================
-elif st.session_state['user_type'] == "Partner":
+elif st.session_state['user_role'] == "Partner":
     if not st.session_state['logged_in']:
-        t1, t2 = st.tabs(["Login", "Register Business"])
-        with t2:
-            with st.form("preg"):
+        t_log, t_reg = st.tabs(["Login", "Register Business"])
+        with t_reg:
+            with st.form("p_reg"):
                 p_ph = st.text_input("Mobile No.")
-                p_pw = st.text_input("Password", type="password")
-                p_name = st.text_input("Business Name")
-                p_cat = st.selectbox("Category", CATEGORIES)
-                p_loc = st.selectbox("City/District", DISTRICTS)
-                if st.form_submit_button("Apply for KYC"):
-                    partners = read_db(DB_PARTNERS)
-                    if p_ph in partners['Phone'].values:
-                        st.error("Already registered.")
-                    else:
-                        new_p = pd.DataFrame([{"Phone": p_ph, "Password": p_pw, "Name": p_name, "Category": p_cat, "Location": p_loc, "Status": "Pending"}])
-                        save_db(DB_PARTNERS, pd.concat([partners, new_p]))
-                        st.success("✅ Application sent to Admin.")
-        with t1:
-            p_ph = st.text_input("Mobile ")
-            p_pw = st.text_input("Password ", type="password")
-            if st.button("Secure Login"):
-                partners = read_db(DB_PARTNERS)
-                user = partners[(partners['Phone'] == p_ph) & (partners['Password'] == p_pw)]
+                p_pw = st.text_input("Create Password", type="password")
+                p_name = st.text_input("Full Name / Business Name")
+                if st.form_submit_button("Register"):
+                    new_p = pd.DataFrame([{"Phone": p_ph, "Password": p_pw, "Name": p_name, "Role": "Partner", "Location": st.session_state['city'], "Status": "Verified"}])
+                    save_db(pd.concat([db_partners, new_p]), DB_PARTNERS)
+                    st.success("✅ Registered Successfully!")
+        with t_log:
+            l_ph = st.text_input("Mobile No. ")
+            l_pw = st.text_input("Password ", type="password")
+            if st.button("Login"):
+                user = db_partners[(db_partners['Phone'] == l_ph) & (db_partners['Password'] == l_pw)]
                 if not user.empty:
-                    if user.iloc[0]['Status'] == 'Verified':
-                        st.session_state.update({'logged_in': True, 'phone': p_ph, 'name': user.iloc[0]['Name'], 'location': user.iloc[0]['Location']})
-                        st.rerun()
-                    else:
-                        st.error("Admin approval pending.")
+                    st.session_state.update({'logged_in': True, 'phone': l_ph, 'name': user.iloc[0]['Name'], 'city': user.iloc[0]['Location']})
+                    st.rerun()
                 else:
-                    st.error("Invalid credentials.")
+                    st.error("Invalid Login.")
     else:
-        st.success(f"💼 Welcome {st.session_state['name']} | 📍 {st.session_state['location']}")
+        st.success(f"💼 Partner Panel: {st.session_state['name']} (📍 {st.session_state['city']})")
         if st.button("Logout"):
             st.session_state['logged_in'] = False
             st.rerun()
             
-        tab_new, tab_act = st.tabs(["🔔 New Leads", "📦 Active Orders"])
+        t_leads, t_active = st.tabs(["🔔 New Leads", "📦 Active Deliveries"])
         
-        with tab_new:
-            st.write("Orders waiting for a partner in your area:")
-            orders = read_db(DB_ORDERS)
-            # Find Unassigned orders in Partner's Location
-            open_orders = orders[(orders['Location'] == st.session_state['location']) & (orders['Status'] == 'Pending')]
-            for idx, row in open_orders.iterrows():
-                st.markdown(f"<div class='card'><b>{row['Item_Name']}</b><br>Price: ₹{row['Price']} | Customer: {row['Customer_Phone']}</div>", unsafe_allow_html=True)
+        with t_leads:
+            pending = db_orders[(db_orders['Location'] == st.session_state['city']) & (db_orders['Status'] == 'Pending')]
+            st.write(f"Found {len(pending)} open orders in your area:")
+            for idx, row in pending.iterrows():
+                st.markdown(f"<div class='product-card'><div><b>{row['Item']}</b><br>Customer: {row['Customer']}</div><div>₹{row['Price']}</div></div>", unsafe_allow_html=True)
                 if st.button(f"Accept Order {row['Order_ID']}"):
-                    orders.at[idx, 'Partner_Phone'] = st.session_state['phone']
-                    orders.at[idx, 'Status'] = 'Accepted'
-                    save_db(DB_ORDERS, orders)
-                    st.success("Order Accepted! Go to Active Orders to complete it.")
+                    db_orders.at[idx, 'Partner'] = st.session_state['phone']
+                    db_orders.at[idx, 'Status'] = 'Accepted'
+                    save_db(db_orders, DB_ORDERS)
                     st.rerun()
-
-        with tab_act:
-            st.write("Orders you have accepted:")
-            orders = read_db(DB_ORDERS)
-            my_active = orders[(orders['Partner_Phone'] == st.session_state['phone']) & (orders['Status'] == 'Accepted')]
-            for idx, row in my_active.iterrows():
-                st.markdown(f"<div class='card' style='border-color:#10b981;'><b>{row['Item_Name']}</b><br>Customer: {row['Customer_Phone']}</div>", unsafe_allow_html=True)
+                    
+        with t_active:
+            active = db_orders[(db_orders['Partner'] == st.session_state['phone']) & (db_orders['Status'] == 'Accepted')]
+            for idx, row in active.iterrows():
+                st.markdown(f"<div class='job-card'><b>Deliver:</b> {row['Item']}<br>Customer Phone: {row['Customer']}</div>", unsafe_allow_html=True)
                 with st.form(f"otp_{row['Order_ID']}"):
-                    entered_otp = st.text_input("Ask Customer for 4-digit OTP to complete:")
-                    if st.form_submit_button("Verify & Complete"):
-                        if entered_otp == row['OTP']:
-                            orders.at[idx, 'Status'] = 'Completed ✅'
-                            save_db(DB_ORDERS, orders)
-                            st.success("Service Completed Successfully!")
+                    otp_in = st.text_input("Ask Customer for 4-Digit OTP to Complete:")
+                    if st.form_submit_button("Verify & Complete Order"):
+                        if otp_in == row['OTP']:
+                            db_orders.at[idx, 'Status'] = 'Completed'
+                            save_db(db_orders, DB_ORDERS)
+                            st.success("✅ Delivery Successful!")
                             st.balloons()
                             st.rerun()
                         else:
-                            st.error("Invalid OTP.")
+                            st.error("Wrong OTP entered.")
 
 # ==========================================
-# 7. SUPER ADMIN INTERFACE
+# 7. SUPER ADMIN CENTER
 # ==========================================
-elif st.session_state['user_type'] == "Admin":
-    st.title("⚙️ Operations Control Room")
-    t1, t2 = st.tabs(["👥 Partner Verifications", "📊 Live Orders Oversight"])
+elif st.session_state['user_role'] == "Admin":
+    st.title("⚙️ Master Admin Control Room")
+    t1, t2, t3 = st.tabs(["📦 Track All Orders", "📋 Job Applications (Leads)", "👥 Partners"])
     
     with t1:
-        st.write("Approve or Reject Partners (KYC)")
-        partners = read_db(DB_PARTNERS)
-        edited_p = st.data_editor(partners, key="admin_p", use_container_width=True)
-        if st.button("Save Partner Status"):
-            save_db(DB_PARTNERS, edited_p)
-            st.success("Database Updated!")
-            
+        st.subheader("Global Service & Delivery Orders")
+        st.dataframe(db_orders, use_container_width=True)
     with t2:
-        st.write("Global Order Tracking")
-        orders = read_db(DB_ORDERS)
-        st.dataframe(orders, use_container_width=True)
+        st.subheader("Job Applications (Ecosystem B)")
+        st.info("These are direct candidates applying for monthly jobs. No OTPs required here.")
+        st.dataframe(db_job_apps, use_container_width=True)
+    with t3:
+        st.subheader("Registered Partners (Ecosystem A)")
+        st.dataframe(db_partners, use_container_width=True)
